@@ -1,0 +1,7 @@
+debug: true
+server:
+  host: localhost
+  port: 8000
+  read_timeout: 5s
+  write_timeout: 5s
+  idle_timeout: 120s

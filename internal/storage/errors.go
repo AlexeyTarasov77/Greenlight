@@ -2,7 +2,9 @@ package storage
 
 import "errors"
 
+const EmptyIntValue = -1
+
 var (
 	ErrNotFound = errors.New("not found")
-	ErrAlreadyExists = errors.New("already exists")
+	ErrConflict = errors.New("conflict")
 )

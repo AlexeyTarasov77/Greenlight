@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Debug  bool   `yaml:"debug"`
 	Server Server `yaml:"server"`
+	DB DB `yaml:"db"`
 }
 
 type Server struct {
@@ -20,6 +21,12 @@ type Server struct {
 	ReadTimeout  time.Duration `yaml:"read_timeout" env-default:"2s"`
 	WriteTimeout time.Duration `yaml:"write_timeout" env-default:"2s"`
 	IdleTimeout  time.Duration `yaml:"idle_timeout" env-default:"60s"`
+}
+
+type DB struct {
+	Dsn string `yaml:"dsn" env-required:"true"`
+	MaxConns int `yaml:"max_conns" env-default:"25"`
+	MaxConnIdleTime time.Duration `yaml:"max_conn_idle_time" env-default:"10m"`
 }
 
 func MustLoad(configPath string) *Config {

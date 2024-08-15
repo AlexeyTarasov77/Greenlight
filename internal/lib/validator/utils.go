@@ -74,6 +74,8 @@ func GetErrorMsgForField(obj any, err govalidator.FieldError) (errorMsg string) 
 			errorMsg = fmt.Sprintf("Value should not be one of %s", err.Param())
 		case "len":
 			errorMsg = fmt.Sprintf("Length should be equal to %s", err.Param())
+		case "unique":
+			errorMsg = "Value must not contain duplicate values"
 		default:
 			errorMsg = "This field is invalid"
 		}

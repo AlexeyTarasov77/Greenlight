@@ -5,3 +5,7 @@ server:
   read_timeout: 5s
   write_timeout: 5s
   idle_timeout: 120s
+db:
+  dsn: "postgres://std_user:1234@localhost/greenlight?sslmode=disable"
+  max_conns: 10
+  max_conn_idle_time: 5m

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"greenlight/proj/internal/config"
 	"greenlight/proj/internal/lib/logger/handlers/slogpretty"
+	"greenlight/proj/internal/storage/postgres"
 	"log/slog"
 	"net"
 	"net/http"
@@ -19,8 +20,13 @@ func main() {
 	flag.Parse()
 	cfg := config.MustLoad(*cfgPath)
 	log := setupLogger(cfg.Debug)
-
-	app := NewApplication(cfg, log)
+	storage, err := postgres.New(cfg.DB.Dsn, cfg.DB.MaxConns, cfg.DB.MaxConnIdleTime)
+	if err != nil {
+		panic(err)
+	}
+	defer storage.Conn.Close()
+	log.Info("database connection established", "dsn", cfg.DB.Dsn)
+	app := NewApplication(cfg, log, storage)
 	router := app.routes()
 	server := http.Server{
 		Addr:    net.JoinHostPort(cfg.Server.Host, cfg.Server.Port),

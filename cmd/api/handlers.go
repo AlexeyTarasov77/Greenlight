@@ -1,6 +1,7 @@
 package main
 
 import (
+	"greenlight/proj/internal/domain/fields"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/lib/validator"
 	"net/http"
@@ -64,13 +65,13 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 
 func (app *Application) createMovie(w http.ResponseWriter, r *http.Request) {
 	type request struct {
-		Title   string   `validate:"required,max=255"`
-		Year    int32    `validate:"required,min=1888,max=2100"`
-		Runtime int32    `validate:"required"`
-		Genres  []string `validate:"required"`
+		Title   string              `validate:"required,max=255"`
+		Year    int32               `validate:"required,min=1888,max=2100"`
+		Runtime fields.MovieRuntime `validate:"required,gt=0"`
+		Genres  []string            `validate:"required,min=1,max=5,unique"`
 	}
 	var req request
-	if err := app.decodeJSON(r.Body, &req); err != nil {
+	if err := app.readJSON(w, r, &req); err != nil {
 		app.Http.BadRequest(w, r, err.Error())
 		return
 	}
@@ -78,10 +79,10 @@ func (app *Application) createMovie(w http.ResponseWriter, r *http.Request) {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return
 	}
-	createdMovie, err := app.movies.Create(req.Title, req.Year, req.Runtime, req.Genres)
-	if err != nil {
-		app.Http.ServerError(w, r, err, "")
-		return
-	}
-	app.Http.Ok(w, r, envelop{"movie": createdMovie}, "Movie successfully created")
+	// createdMovie, err := app.movies.Create(req.Title, req.Year, req.Runtime, req.Genres)
+	// if err != nil {
+	// 	app.Http.ServerError(w, r, err, "")
+	// 	return
+	// }
+	app.Http.Ok(w, r, envelop{"movie": req}, "Movie successfully created")
 }

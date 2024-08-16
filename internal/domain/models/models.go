@@ -1,6 +1,9 @@
 package models
 
-import "greenlight/proj/internal/domain/fields"
+import (
+	"greenlight/proj/internal/domain/fields"
+	"time"
+)
 
 
 type Movie struct {
@@ -10,5 +13,5 @@ type Movie struct {
 	Runtime   fields.MovieRuntime   `json:"runtime,omitempty"`    // Movie runtime (in minutes)
 	Genres    []string `json:"genres,omitempty"`	   // Movie genres (i.e. Comedy, drama, scifi)
 	Version   uint     `json:"version"` // The version number starts at 1 and will be incremented each // time the movie information is updated
-	CreatedAt string   `json:"-"` // Timestamp for when the movie is added to our database
+	CreatedAt time.Time   `json:"-"` // Timestamp for when the movie is added to our database
 }

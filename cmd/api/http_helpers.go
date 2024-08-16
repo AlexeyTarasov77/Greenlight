@@ -59,6 +59,12 @@ func (h *Http) BadRequest(w http.ResponseWriter, r *http.Request, msg string) {
 	render.JSON(w, r, h.NewResponse(nil, msg, status))
 }
 
+func (h *Http) Conflict(w http.ResponseWriter, r *http.Request, msg string) {
+	status := http.StatusConflict
+	render.Status(r, status)
+	render.JSON(w, r, h.NewResponse(nil, msg, status))
+}
+
 func (h *Http) UnprocessableEntity(w http.ResponseWriter, r *http.Request, errors map[string]string) {
 	status := http.StatusUnprocessableEntity
 	render.Status(r, status)
@@ -83,6 +89,7 @@ func (h *Http) ServerError(w http.ResponseWriter, r *http.Request, err error, ms
 	msg = processMsg(status, msg)
 	if h.cfg.Debug {
 		msg = msg + "\n" + string(debug.Stack())
+		w.WriteHeader(status)
 		w.Write([]byte(msg))
 		return
 	}

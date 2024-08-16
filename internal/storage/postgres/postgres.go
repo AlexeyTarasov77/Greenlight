@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"greenlight/proj/internal/domain/fields"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/storage"
 	"time"
@@ -15,6 +16,8 @@ import (
 type PostgresDB struct {
 	Conn *pgxpool.Pool
 }
+
+const ErrConflictCode = "23505"
 
 func New(storagePath string, maxConns int, maxConnIdleTime time.Duration) (*PostgresDB, error) {
 	pool, err := pgxpool.New(context.Background(), storagePath)
@@ -44,7 +47,7 @@ func (db *PostgresDB) Get(id int) (*models.Movie, error) {
 	return &movie, nil
 }
 
-func (db *PostgresDB) Insert(title string, year int32, runtime int32, genres []string) (*models.Movie, error) {
+func (db *PostgresDB) Insert(title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error) {
 	rows, _ := db.Conn.Query(
 		context.Background(),
 		"INSERT INTO movies (title, year, runtime, genres) VALUES ($1, $2, $3, $4) RETURNING *",
@@ -56,7 +59,7 @@ func (db *PostgresDB) Insert(title string, year int32, runtime int32, genres []s
 	movie, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Movie])
 	if err != nil {
 		var pgxErr *pgconn.PgError
-		if errors.As(err, &pgxErr) && pgxErr.Code == "23505" {
+		if errors.As(err, &pgxErr) && pgxErr.Code == ErrConflictCode {
 			return nil, storage.ErrConflict
 		}
 		return nil, err
@@ -79,4 +82,27 @@ func (db *PostgresDB) List(limit int) ([]models.Movie, error) {
 		return nil, err
 	}
 	return movies, nil
+}
+
+func (db *PostgresDB) Update(movie *models.Movie) (*models.Movie, error) {
+	rows, _ := db.Conn.Query(
+		context.Background(),
+		"UPDATE movies SET version = version + 1, title = $1, year = $2, runtime = $3, genres = $4 WHERE id = $5 RETURNING *",
+		movie.Title,
+		movie.Year,
+		movie.Runtime,
+		movie.Genres,
+		movie.ID,
+	)
+	m, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Movie])
+	if err != nil {
+		var pgxErr *pgconn.PgError
+		if errors.As(err, &pgxErr) && pgxErr.Code == ErrConflictCode {
+			return nil, storage.ErrConflict
+		} else if errors.Is(err, pgx.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, err
+	}
+	return &m, nil
 }

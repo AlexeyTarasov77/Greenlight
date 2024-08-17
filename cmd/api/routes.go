@@ -25,6 +25,7 @@ func (app *Application) routes() http.Handler {
 			r.Post("/", app.createMovie)
 		})
 		r.Post("/login", app.login)
+		r.Post("/signup", app.signup)
 		// router.Route("/sso", func(r chi.Router) {
 		// 	r.Post("/login", app.login)
 		// })

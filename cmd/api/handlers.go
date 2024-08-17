@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"greenlight/proj/internal/domain/fields"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc/status"
@@ -25,9 +23,8 @@ func (app *Application) healthcheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) getMovie(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		app.Http.BadRequest(w, r, "invalid movie ID")
+	id, extracted := app.extractIDParam(w, r)
+	if !extracted {
 		return
 	}
 	movie, err := app.movies.Get(id)
@@ -86,14 +83,14 @@ func (app *Application) createMovie(w http.ResponseWriter, r *http.Request) {
 		app.Http.ServerError(w, r, err, "")
 		return
 	}
+	w.Header().Set("Location", fmt.Sprintf("/v1/movies/%d", createdMovie.ID))
 	app.Http.Created(w, r, envelop{"movie": createdMovie}, "Movie successfully created")
 }
 
 
 func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		app.Http.BadRequest(w, r, "invalid movie ID")
+	id, extracted := app.extractIDParam(w, r)
+	if !extracted {
 		return
 	}
 	type request struct {
@@ -126,12 +123,11 @@ func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteMovie(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		app.Http.BadRequest(w, r, "invalid movie ID")
+	id, extracted := app.extractIDParam(w, r)
+	if !extracted {
 		return
 	}
-	err = app.movies.Delete(id)
+	err := app.movies.Delete(id)
 	if err != nil {
 		if errors.Is(err, movies.ErrMovieNotFound) {
 			app.Http.NotFound(w, r, err.Error())
@@ -148,7 +144,7 @@ func (app *Application) deleteMovie(w http.ResponseWriter, r *http.Request) {
 func (app *Application) login(w http.ResponseWriter, r *http.Request) {
 	type request struct {
 		Email    string `validate:"required,email"`
-		Password string `validate:"required"`
+		Password string `validate:"required,min=8"`
 	}
 	var req request
 	if err := app.readJSON(w, r, &req); err != nil {
@@ -163,18 +159,49 @@ func (app *Application) login(w http.ResponseWriter, r *http.Request) {
 	grpcErr, ok := status.FromError(err)
 	httpRespCode := runtime.HTTPStatusFromCode(grpcErr.Code())
 	if grpcErr.Message() != "" {
-		app.log.Info("Sso login response msg not empty", "raw message", grpcErr.Message())
-		parsedErrors := make(map[string]string)
-		if err := json.Unmarshal([]byte(grpcErr.Message()), &parsedErrors); err != nil {
-			app.log.Error("Error decoding grpc error message", "errMsg", err.Error())
-			app.Http.ServerError(w, r, err, "")
-			return
-		}
-		app.Http.Response(w, r, envelop{"errors": parsedErrors}, "", httpRespCode)
+		// app.log.Info("Sso login response msg not empty", "raw message", grpcErr.Message())
+		// parsedErrors := make(map[string]string)
+		// if err := json.Unmarshal([]byte(grpcErr.Message()), &parsedErrors); err != nil {
+		// 	app.log.Error("Error decoding grpc error message", "errMsg", err.Error())
+		// 	app.Http.ServerError(w, r, err, "")
+		// 	return
+		// }
+		// app.Http.Response(w, r, envelop{"errors": parsedErrors}, "", httpRespCode)
+		// return
+		app.handlegRPCError(w, r, grpcErr, httpRespCode)
 		return
 	}
 	if ok {
 		app.Http.Response(w, r, envelop{"tokens": tokens}, "", httpRespCode)
+		return
+	} 
+	app.Http.ServerError(w, r, err, "")
+}
+
+func (app *Application) signup(w http.ResponseWriter, r *http.Request) {
+	type request struct {
+		Username string `validate:"required,max=50,alphanum"`
+		Email    string `validate:"required,email"`
+		Password string `validate:"required,min=8"`
+	}
+	var req request
+	if err := app.readJSON(w, r, &req); err != nil {
+		app.Http.BadRequest(w, r, err.Error())
+		return
+	}
+	if validationErrs := validator.ValidateStruct(app.validator, req); len(validationErrs) > 0 {
+		app.Http.UnprocessableEntity(w, r, validationErrs)
+		return
+	}
+	id, err := app.Sso.Register(r.Context(), req.Email, req.Password)
+	grpcErr, ok := status.FromError(err)
+	httpRespCode := runtime.HTTPStatusFromCode(grpcErr.Code())
+	if grpcErr.Message() != "" {
+		app.handlegRPCError(w, r, grpcErr, httpRespCode)
+		return
+	}
+	if ok {
+		app.Http.Created(w, r, envelop{"id": id}, "User successfully created")
 		return
 	} 
 	app.Http.ServerError(w, r, err, "")

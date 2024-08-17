@@ -6,7 +6,35 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
+	"google.golang.org/grpc/status"
 )
+
+func (app *Application) extractIDParam(w http.ResponseWriter, r *http.Request) (id int, extracted bool) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		app.Http.BadRequest(w, r, "invalid movie ID")
+		return 0, false
+	}
+	if id < 1 {
+		app.Http.BadRequest(w, r, "id must be greater than zero")
+		return 0, false
+	}
+	return id, true
+}
+
+func (app *Application) handlegRPCError(w http.ResponseWriter, r *http.Request, grpcErr *status.Status, status int) {
+	app.log.Info("Sso login response msg not empty", "raw message", grpcErr.Message())
+	parsedErrors := make(map[string]string)
+	if err := json.Unmarshal([]byte(grpcErr.Message()), &parsedErrors); err != nil {
+		app.log.Error("Error decoding grpc error message", "errMsg", err.Error())
+		app.Http.ServerError(w, r, err, "")
+		return
+	}
+	app.Http.Response(w, r, envelop{"errors": parsedErrors}, "", status)
+}
 
 func (app *Application) readJSON(w http.ResponseWriter, r *http.Request, dst interface{}) error {
 	maxBytes := 1_048_576 // 1MB

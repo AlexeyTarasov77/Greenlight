@@ -19,7 +19,7 @@ func (app *Application) routes() http.Handler {
 		r.Get("/healthcheck", app.healthcheck)
 		r.Route("/movies", func(r chi.Router) {
 			r.Get("/{id}", app.getMovie)
-			r.Put("/{id}", app.updateMovie)
+			r.Patch("/{id}", app.updateMovie)
 			r.Delete("/{id}", app.deleteMovie)
 			r.Get("/", app.getMovies)
 			r.Post("/", app.createMovie)

@@ -73,40 +73,52 @@ func (s *MovieService) List(limit int) ([]models.Movie, error) {
 	return movies, nil
 }
 
-func (s *MovieService) Update(id int, title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error) {
+func (s *MovieService) Update(id int, title *string, year *int32, runtime *fields.MovieRuntime, genres []string) (*models.Movie, error) {
 	const op = "movies.MovieService.Update"
 	log := s.log.With("op", op, "id", id, "title", title, "year", year, "runtime", runtime, "genres", genres)
 	movie, err := s.Get(id)
 	if err != nil {
 		if errors.Is(err, ErrMovieNotFound) {
+			log.Info("movie not found")
 			return nil, ErrMovieNotFound
 		}
 		log.Error("Error getting movie: " + err.Error())
 		return nil, err
 	}
-	if title != "" {
-		movie.Title = title
+	var argsChanged int
+	if title != nil {
+		movie.Title = *title
+		argsChanged++
 	}
-	if year != 0 {
-		movie.Year = year
+	if year != nil {
+		movie.Year = *year
+		argsChanged++
 	}
-	if runtime != 0 {
-		movie.Runtime = runtime
+	if runtime != nil {
+		movie.Runtime = *runtime
+		argsChanged++
 	}
 	if genres != nil {
 		movie.Genres = genres
+		argsChanged++
+	}
+	if argsChanged == 0 {
+		log.Info("no arguments changed")
+		return nil, ErrNoArgumentsChanged
 	}
 	updatedMovie, err := s.storage.Update(movie)
 	if err != nil {
-		if errors.Is(err, storage.ErrConflict) {
+		switch {
+		case errors.Is(err, storage.ErrConflict):
 			log.Info("movie already exists")
 			return nil, ErrMovieAlreadyExists
-		} else if errors.Is(err, storage.ErrNotFound) {
-			log.Info("movie not found")
-			return nil, ErrMovieNotFound
+		case errors.Is(err, storage.ErrNotFound):
+			log.Warn("Update conflict, because of concurrent update")
+			return nil, ErrEditConflict
+		default:
+			log.Error("Error updating movie: " + err.Error())
+			return nil, err
 		}
-		log.Error("Error updating movie: " + err.Error())
-		return nil, err
 	}
 	return updatedMovie, nil
 }

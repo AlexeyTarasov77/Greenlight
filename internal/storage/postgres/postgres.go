@@ -87,12 +87,14 @@ func (db *PostgresDB) List(limit int) ([]models.Movie, error) {
 func (db *PostgresDB) Update(movie *models.Movie) (*models.Movie, error) {
 	rows, _ := db.Conn.Query(
 		context.Background(),
-		"UPDATE movies SET version = version + 1, title = $1, year = $2, runtime = $3, genres = $4 WHERE id = $5 RETURNING *",
+		`UPDATE movies SET version = version + 1, title = $1, year = $2, runtime = $3, genres = $4
+		WHERE id = $5 AND version = $6 RETURNING *`,
 		movie.Title,
 		movie.Year,
 		movie.Runtime,
 		movie.Genres,
 		movie.ID,
+		movie.Version,
 	)
 	m, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Movie])
 	if err != nil {

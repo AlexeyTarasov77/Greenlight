@@ -25,7 +25,7 @@ func (app *Application) extractIDParam(w http.ResponseWriter, r *http.Request) (
 	return id, true
 }
 
-func (app *Application) handlegRPCError(w http.ResponseWriter, r *http.Request, grpcErr *status.Status, status int) {
+func (app *Application) handleGRPCError(w http.ResponseWriter, r *http.Request, grpcErr *status.Status, status int) {
 	app.log.Info("Sso login response msg not empty", "raw message", grpcErr.Message())
 	parsedErrors := make(map[string]string)
 	if err := json.Unmarshal([]byte(grpcErr.Message()), &parsedErrors); err != nil {
@@ -48,7 +48,7 @@ func (app *Application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 	}
 	err = dec.Decode(&struct{}{})
 	if err != io.EOF {
-		return errors.New("body must only contain a single JSON value") 
+		return errors.New("body must only contain a single JSON value")
 	}
 
 	return nil

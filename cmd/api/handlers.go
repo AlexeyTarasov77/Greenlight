@@ -87,16 +87,15 @@ func (app *Application) createMovie(w http.ResponseWriter, r *http.Request) {
 	app.Http.Created(w, r, envelop{"movie": createdMovie}, "Movie successfully created")
 }
 
-
 func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
 	id, extracted := app.extractIDParam(w, r)
 	if !extracted {
 		return
 	}
 	type request struct {
-		Title   string              `validate:"omitempty,max=255"`
-		Year    int32               `validate:"omitempty,min=1888,max=2100"`
-		Runtime fields.MovieRuntime `validate:"omitempty,gt=0"`
+		Title   *string              `validate:"omitempty,max=255,min=1"`
+		Year    *int32               `validate:"omitempty,min=1888,max=2100"`
+		Runtime *fields.MovieRuntime `validate:"omitempty,gt=0"`
 		Genres  []string            `validate:"omitempty,min=1,max=5,unique"`
 	}
 	var req request
@@ -110,11 +109,14 @@ func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
 	}
 	updatedMovie, err := app.movies.Update(id, req.Title, req.Year, req.Runtime, req.Genres)
 	if err != nil {
-		if errors.Is(err, movies.ErrMovieNotFound) {
+		switch {
+		case errors.Is(err, movies.ErrMovieNotFound):
 			app.Http.NotFound(w, r, err.Error())
-		} else if errors.Is(err, movies.ErrMovieAlreadyExists) {
+		case errors.Is(err, movies.ErrNoArgumentsChanged):
+			app.Http.BadRequest(w, r, err.Error())
+		case errors.Is(err, movies.ErrMovieAlreadyExists) || errors.Is(err, movies.ErrEditConflict):
 			app.Http.Conflict(w, r, err.Error())
-		} else {
+		default:
 			app.Http.ServerError(w, r, err, "")
 		}
 		return
@@ -159,22 +161,13 @@ func (app *Application) login(w http.ResponseWriter, r *http.Request) {
 	grpcErr, ok := status.FromError(err)
 	httpRespCode := runtime.HTTPStatusFromCode(grpcErr.Code())
 	if grpcErr.Message() != "" {
-		// app.log.Info("Sso login response msg not empty", "raw message", grpcErr.Message())
-		// parsedErrors := make(map[string]string)
-		// if err := json.Unmarshal([]byte(grpcErr.Message()), &parsedErrors); err != nil {
-		// 	app.log.Error("Error decoding grpc error message", "errMsg", err.Error())
-		// 	app.Http.ServerError(w, r, err, "")
-		// 	return
-		// }
-		// app.Http.Response(w, r, envelop{"errors": parsedErrors}, "", httpRespCode)
-		// return
-		app.handlegRPCError(w, r, grpcErr, httpRespCode)
+		app.handleGRPCError(w, r, grpcErr, httpRespCode)
 		return
 	}
 	if ok {
 		app.Http.Response(w, r, envelop{"tokens": tokens}, "", httpRespCode)
 		return
-	} 
+	}
 	app.Http.ServerError(w, r, err, "")
 }
 
@@ -197,12 +190,12 @@ func (app *Application) signup(w http.ResponseWriter, r *http.Request) {
 	grpcErr, ok := status.FromError(err)
 	httpRespCode := runtime.HTTPStatusFromCode(grpcErr.Code())
 	if grpcErr.Message() != "" {
-		app.handlegRPCError(w, r, grpcErr, httpRespCode)
+		app.handleGRPCError(w, r, grpcErr, httpRespCode)
 		return
 	}
 	if ok {
 		app.Http.Created(w, r, envelop{"id": id}, "User successfully created")
 		return
-	} 
+	}
 	app.Http.ServerError(w, r, err, "")
 }

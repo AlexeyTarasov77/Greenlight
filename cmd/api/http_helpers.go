@@ -53,6 +53,18 @@ func (h *Http) Ok(w http.ResponseWriter, r *http.Request, data envelop, msg stri
 	render.JSON(w, r, h.NewResponse(data, msg, status))
 }
 
+func (h *Http) Created(w http.ResponseWriter, r *http.Request, data envelop, msg string) {
+	status := http.StatusCreated
+	render.Status(r, status)
+	render.JSON(w, r, h.NewResponse(data, msg, status))
+}
+
+func (h *Http) NoContent(w http.ResponseWriter, r *http.Request, msg string) {
+	status := http.StatusNoContent
+	render.Status(r, status)
+	render.JSON(w, r, h.NewResponse(nil, msg, status))
+}
+
 func (h *Http) BadRequest(w http.ResponseWriter, r *http.Request, msg string) {
 	status := http.StatusBadRequest
 	render.Status(r, status)

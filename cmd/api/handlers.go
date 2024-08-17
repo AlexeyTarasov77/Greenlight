@@ -27,20 +27,13 @@ func (app *Application) getMovie(w http.ResponseWriter, r *http.Request) {
 		app.Http.BadRequest(w, r, "invalid movie ID")
 		return
 	}
-	// movie := models.Movie{
-	// 	ID:      id,
-	// 	Title:   "The Big New Movie",
-	// 	Year:    2022,
-	// 	Genres:  []string{"drama", "comedy"},
-	// 	Runtime: 125,
-	// 	Version: 1,
-	// }
 	movie, err := app.movies.Get(id)
 	if err != nil {
 		if errors.Is(err, movies.ErrMovieNotFound) {
 			http.NotFound(w, r)
+		} else {
+			app.Http.ServerError(w, r, fmt.Errorf("error during retrieving movie from db: %w", err), "")
 		}
-		app.Http.ServerError(w, r, fmt.Errorf("error during retrieving movie from db: %w", err), "")
 		return
 	}
 	app.Http.Ok(w, r, envelop{"movie": movie}, "")
@@ -90,7 +83,7 @@ func (app *Application) createMovie(w http.ResponseWriter, r *http.Request) {
 		app.Http.ServerError(w, r, err, "")
 		return
 	}
-	app.Http.Ok(w, r, envelop{"movie": createdMovie}, "Movie successfully created")
+	app.Http.Created(w, r, envelop{"movie": createdMovie}, "Movie successfully created")
 }
 
 
@@ -115,26 +108,6 @@ func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return
 	}
-	// movie, err := app.movies.Get(id)
-	// if err != nil {
-	// 	if errors.Is(err, movies.ErrMovieNotFound) {
-	// 		app.Http.NotFound(w, r, "movie not found")
-	// 	}
-	// 	app.Http.ServerError(w, r, fmt.Errorf("error during retrieving movie from db: %w", err), "")
-	// 	return
-	// }
-	// if req.Title != "" {
-	// 	movie.Title = req.Title
-	// }
-	// if req.Year != 0 {
-	// 	movie.Year = req.Year
-	// }
-	// if req.Runtime != 0 {
-	// 	movie.Runtime = req.Runtime
-	// }
-	// if req.Genres != nil {
-	// 	movie.Genres = req.Genres
-	// }
 	updatedMovie, err := app.movies.Update(id, req.Title, req.Year, req.Runtime, req.Genres)
 	if err != nil {
 		if errors.Is(err, movies.ErrMovieNotFound) {
@@ -149,4 +122,20 @@ func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
 	app.Http.Ok(w, r, envelop{"movie": updatedMovie}, "Movie successfully updated")
 }
 
-func (app *Application) deleteMovie(w http.ResponseWriter, r *http.Request) {}
+func (app *Application) deleteMovie(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		app.Http.BadRequest(w, r, "invalid movie ID")
+		return
+	}
+	err = app.movies.Delete(id)
+	if err != nil {
+		if errors.Is(err, movies.ErrMovieNotFound) {
+			app.Http.NotFound(w, r, err.Error())
+		} else {
+			app.Http.ServerError(w, r, err, "")
+		}
+		return
+	}
+	app.Http.NoContent(w, r, "Movie successfully deleted")
+}

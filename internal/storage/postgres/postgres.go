@@ -106,3 +106,14 @@ func (db *PostgresDB) Update(movie *models.Movie) (*models.Movie, error) {
 	}
 	return &m, nil
 }
+
+func (db *PostgresDB) Delete(id int) error {
+	status, err := db.Conn.Exec(context.Background(), "DELETE FROM movies WHERE id = $1", id)
+	if status.RowsAffected() == 0 {
+		return storage.ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}

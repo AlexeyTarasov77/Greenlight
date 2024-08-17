@@ -13,6 +13,7 @@ type MoviesStorage interface {
 	Insert(title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error)
 	List(limit int) ([]models.Movie, error)
 	Update(*models.Movie) (*models.Movie, error)
+	Delete(id int) error
 }
 
 type MovieService struct {
@@ -108,4 +109,19 @@ func (s *MovieService) Update(id int, title string, year int32, runtime fields.M
 		return nil, err
 	}
 	return updatedMovie, nil
+}
+
+func (s *MovieService) Delete(id int) error {
+	const op = "movies.MovieService.Delete"
+	log := s.log.With("op", op, "id", id)
+	err := s.storage.Delete(id)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			log.Info("movie not found")
+			return ErrMovieNotFound
+		}
+		log.Error(err.Error())
+		return err
+	}
+	return nil
 }

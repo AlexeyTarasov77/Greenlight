@@ -47,6 +47,11 @@ func (h *Http) NewResponse(data envelop, msg string, status int) *Response {
 	return &Response{Success: success, Message: msg, Data: data}
 }
 
+func (h *Http) Response(w http.ResponseWriter, r *http.Request, data envelop, msg string, status int) {
+	render.Status(r, status)
+	render.JSON(w, r, h.NewResponse(data, msg, status))
+}
+
 func (h *Http) Ok(w http.ResponseWriter, r *http.Request, data envelop, msg string) {
 	status := http.StatusOK
 	render.Status(r, status)

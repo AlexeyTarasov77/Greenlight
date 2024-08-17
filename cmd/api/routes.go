@@ -24,6 +24,10 @@ func (app *Application) routes() http.Handler {
 			r.Get("/", app.getMovies)
 			r.Post("/", app.createMovie)
 		})
+		r.Post("/login", app.login)
+		// router.Route("/sso", func(r chi.Router) {
+		// 	r.Post("/login", app.login)
+		// })
 	})
 	return router
 }

@@ -1,4 +1,6 @@
 debug: true
+app_secret: d914b337e3c6f088610690c66d3128cfe2dea520018efe4a49b31e6ac552f3b5
+app_id: 2
 server:
   host: localhost
   port: 8000
@@ -9,3 +11,8 @@ db:
   dsn: "postgres://std_user:1234@localhost/greenlight?sslmode=disable"
   max_conns: 10
   max_conn_idle_time: 5m
+clients:
+  sso:
+    addr: "localhost:8080"
+    retry_timeout: 2s
+    retries_count: 3

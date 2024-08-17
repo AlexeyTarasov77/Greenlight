@@ -10,10 +10,22 @@ import (
 
 type Config struct {
 	Debug  bool   `yaml:"debug"`
+	AppID  int32    `yaml:"app_id"`
+	AppSecret string `yaml:"app_secret"`
 	Server Server `yaml:"server"`
 	DB DB `yaml:"db"`
+	Clients ClientsConfig `yaml:"clients"`
 }
 
+type Client struct {
+	Addr string `yaml:"addr" env-required:"true"`
+	RetryTimeout time.Duration `yaml:"retry_timeout" env-default:"1s"`
+	RetriesCount int `yaml:"retries_count" env-default:"1"`
+}
+
+type ClientsConfig struct {
+	SSO Client `yaml:"sso"`
+}
 type Server struct {
 	Port string `yaml:"port" env-default:"8000"`
 	Host string `yaml:"host" env-default:"locahost"`

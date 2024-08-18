@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"greenlight/proj/internal/config"
@@ -10,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 )
 
 const version = "1.0.0"
@@ -20,7 +22,9 @@ func main() {
 	flag.Parse()
 	cfg := config.MustLoad(*cfgPath)
 	log := setupLogger(cfg.Debug)
-	storage, err := postgres.New(cfg.DB.Dsn, cfg.DB.MaxConns, cfg.DB.MaxConnIdleTime)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	storage, err := postgres.New(ctx, cfg.DB.Dsn, cfg.DB.MaxConns, cfg.DB.MaxConnIdleTime)
 	if err != nil {
 		panic(err)
 	}

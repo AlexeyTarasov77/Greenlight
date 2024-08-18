@@ -1,19 +1,21 @@
 package movies
 
 import (
+	"context"
 	"errors"
 	"greenlight/proj/internal/domain/fields"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/storage"
 	"log/slog"
+	"time"
 )
 
 type MoviesStorage interface {
-	Get(id int) (*models.Movie, error)
-	Insert(title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error)
-	List(limit int) ([]models.Movie, error)
-	Update(*models.Movie) (*models.Movie, error)
-	Delete(id int) error
+	Get(ctx context.Context, id int) (*models.Movie, error)
+	Insert(ctx context.Context, title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error)
+	List(ctx context.Context, limit int) ([]models.Movie, error)
+	Update(ctx context.Context, movie *models.Movie) (*models.Movie, error)
+	Delete(ctx context.Context, id int) error
 }
 
 type MovieService struct {
@@ -31,7 +33,9 @@ func New(log *slog.Logger, storage MoviesStorage) *MovieService {
 func (s *MovieService) Get(id int) (*models.Movie, error) {
 	const op = "movies.MovieService.Get"
 	log := s.log.With("op", op, "id", id)
-	movie, err := s.storage.Get(id)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	movie, err := s.storage.Get(ctx, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			log.Info("movie not found")
@@ -46,7 +50,9 @@ func (s *MovieService) Get(id int) (*models.Movie, error) {
 func (s *MovieService) Create(title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error) {
 	const op = "movies.MovieService.Create"
 	log := s.log.With("op", op, "title", title, "year", year, "runtime", runtime, "genres", genres)
-	movie, err := s.storage.Insert(title, year, runtime, genres)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	movie, err := s.storage.Insert(ctx, title, year, runtime, genres)
 	if err != nil {
 		if errors.Is(err, storage.ErrConflict) {
 			log.Info("movie already exists")
@@ -61,7 +67,9 @@ func (s *MovieService) Create(title string, year int32, runtime fields.MovieRunt
 func (s *MovieService) List(limit int) ([]models.Movie, error) {
 	const op = "movies.MovieService.List"
 	log := s.log.With("op", op)
-	movies, err := s.storage.List(limit)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	movies, err := s.storage.List(ctx, limit)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			log.Info("movies not found")
@@ -106,7 +114,9 @@ func (s *MovieService) Update(id int, title *string, year *int32, runtime *field
 		log.Info("no arguments changed")
 		return nil, ErrNoArgumentsChanged
 	}
-	updatedMovie, err := s.storage.Update(movie)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	updatedMovie, err := s.storage.Update(ctx, movie)
 	if err != nil {
 		switch {
 		case errors.Is(err, storage.ErrConflict):
@@ -126,7 +136,9 @@ func (s *MovieService) Update(id int, title *string, year *int32, runtime *field
 func (s *MovieService) Delete(id int) error {
 	const op = "movies.MovieService.Delete"
 	log := s.log.With("op", op, "id", id)
-	err := s.storage.Delete(id)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	err := s.storage.Delete(ctx, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			log.Info("movie not found")

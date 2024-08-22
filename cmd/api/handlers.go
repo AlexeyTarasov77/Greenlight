@@ -75,7 +75,14 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 	if params.Genres == nil {
 		params.Genres = []string{}
 	}
-	movies, err := app.movies.List(params.Limit, params.Title, params.Genres)
+	movies, err := app.movies.List(
+		params.Limit,
+		params.Title,
+		params.Genres,
+		params.Page,
+		params.PageSize,
+		params.Sort,
+	)
 	if err != nil {
 		app.Http.ServerError(w, r, err, "")
 		return

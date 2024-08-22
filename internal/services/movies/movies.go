@@ -4,16 +4,18 @@ import (
 	"context"
 	"errors"
 	"greenlight/proj/internal/domain/fields"
+	"greenlight/proj/internal/domain/filters"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/storage"
 	"log/slog"
+	"reflect"
 	"time"
 )
 
 type MoviesStorage interface {
 	Get(ctx context.Context, id int) (*models.Movie, error)
 	Insert(ctx context.Context, title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error)
-	List(ctx context.Context, limit int, title string, genres []string) ([]models.Movie, error)
+	List(ctx context.Context, limit int, title string, genres []string, filters filters.Filters) ([]models.Movie, error)
 	Update(ctx context.Context, movie *models.Movie) (*models.Movie, error)
 	Delete(ctx context.Context, id int) error
 }
@@ -64,12 +66,23 @@ func (s *MovieService) Create(title string, year int32, runtime fields.MovieRunt
 	return movie, nil
 }
 
-func (s *MovieService) List(limit int, title string, genres []string) ([]models.Movie, error) {
+func (s *MovieService) List(limit int, title string, genres []string, page int, pageSize int, sort string) ([]models.Movie, error) {
 	const op = "movies.MovieService.List"
 	log := s.log.With("op", op)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	movies, err := s.storage.List(ctx, limit, title, genres)
+	movieFieldsNum := reflect.TypeOf(models.Movie{}).NumField()
+	movieFields := make([]string, 0, movieFieldsNum)
+	for i := 0; i < movieFieldsNum; i++ {
+		movieFields = append(movieFields, reflect.TypeOf(models.Movie{}).Field(i).Name)
+	}
+	filters := filters.Filters{
+		Page: page,
+		PageSize: pageSize,
+		Sort: sort,
+		SortSafelist: movieFields,
+	}
+	movies, err := s.storage.List(ctx, limit, title, genres, filters)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			log.Info("movies not found")

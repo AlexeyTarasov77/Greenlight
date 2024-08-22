@@ -3,7 +3,9 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"greenlight/proj/internal/domain/fields"
+	"greenlight/proj/internal/domain/filters"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/storage"
 	"time"
@@ -71,14 +73,14 @@ func (db *PostgresDB) Insert(ctx context.Context, title string, year int32, runt
 	return &movie, nil
 }
 
-func (db *PostgresDB) List(ctx context.Context, limit int, title string, genres []string) ([]models.Movie, error) {
+func (db *PostgresDB) List(ctx context.Context, limit int, title string, genres []string, filters filters.Filters) ([]models.Movie, error) {
 	var rows pgx.Rows
-	query := `
+	query := fmt.Sprintf(`
 	SELECT id, title, year, runtime, genres, version, created_at FROM movies
 	WHERE (to_tsvector('english', title) @@ plainto_tsquery('english', $1) OR $1 = '') 
 	AND (genres @> $2 OR $2 = '{}')
-	ORDER BY id
-	`
+	ORDER BY %s %s, id ASC
+	`, filters.SortColumn(), filters.SortDirection())
 	args := []any{title, genres}
 	if limit != storage.EmptyIntValue {
 		query += " LIMIT $3"

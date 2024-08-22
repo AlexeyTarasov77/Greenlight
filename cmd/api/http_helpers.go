@@ -98,12 +98,15 @@ func (h *Http) NotFound(w http.ResponseWriter, r *http.Request, msg string) {
 
 func (h *Http) ServerError(w http.ResponseWriter, r *http.Request, err error, msg string) {
 	status := http.StatusInternalServerError
+	defaultErrMsg := "Sorry! Can't process your request. Please try again later."
 	log := h.setupLogPerReq(r)
 	if err != nil {
 		log.Error(err.Error())
 	}
 	render.Status(r, status)
-	msg = processMsg(status, msg)
+	if msg == "" {
+		msg = defaultErrMsg
+	}
 	if h.cfg.Debug {
 		msg = msg + "\n" + string(debug.Stack())
 		w.WriteHeader(status)

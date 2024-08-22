@@ -13,7 +13,7 @@ import (
 type MoviesStorage interface {
 	Get(ctx context.Context, id int) (*models.Movie, error)
 	Insert(ctx context.Context, title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error)
-	List(ctx context.Context, limit int) ([]models.Movie, error)
+	List(ctx context.Context, limit int, title string, genres []string) ([]models.Movie, error)
 	Update(ctx context.Context, movie *models.Movie) (*models.Movie, error)
 	Delete(ctx context.Context, id int) error
 }
@@ -64,12 +64,12 @@ func (s *MovieService) Create(title string, year int32, runtime fields.MovieRunt
 	return movie, nil
 }
 
-func (s *MovieService) List(limit int) ([]models.Movie, error) {
+func (s *MovieService) List(limit int, title string, genres []string) ([]models.Movie, error) {
 	const op = "movies.MovieService.List"
 	log := s.log.With("op", op)
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	movies, err := s.storage.List(ctx, limit)
+	movies, err := s.storage.List(ctx, limit, title, genres)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			log.Info("movies not found")

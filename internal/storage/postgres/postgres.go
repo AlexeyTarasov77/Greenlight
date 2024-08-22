@@ -33,7 +33,11 @@ func New(ctx context.Context, storagePath string, maxConns int, maxConnIdleTime 
 }
 
 func (db *PostgresDB) Get(ctx context.Context, id int) (*models.Movie, error) {
-	rows, err := db.Conn.Query(ctx, "SELECT * FROM movies WHERE id = $1", id)
+	rows, err := db.Conn.Query(
+		ctx,
+		`SELECT id, title, year, runtime, genres, version, created_at FROM movies WHERE id = $1`,
+		id,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -67,13 +71,20 @@ func (db *PostgresDB) Insert(ctx context.Context, title string, year int32, runt
 	return &movie, nil
 }
 
-func (db *PostgresDB) List(ctx context.Context, limit int) ([]models.Movie, error) {
+func (db *PostgresDB) List(ctx context.Context, limit int, title string, genres []string) ([]models.Movie, error) {
 	var rows pgx.Rows
-	if limit == storage.EmptyIntValue {
-		rows, _ = db.Conn.Query(ctx, "SELECT * FROM movies")
-	} else {
-		rows, _ = db.Conn.Query(ctx, "SELECT * FROM movies LIMIT $1", limit)
+	query := `
+	SELECT id, title, year, runtime, genres, version, created_at FROM movies
+	WHERE (to_tsvector('english', title) @@ plainto_tsquery('english', $1) OR $1 = '') 
+	AND (genres @> $2 OR $2 = '{}')
+	ORDER BY id
+	`
+	args := []any{title, genres}
+	if limit != storage.EmptyIntValue {
+		query += " LIMIT $3"
+		args = append(args, limit)
 	}
+	rows, _ = db.Conn.Query(ctx, query, args...)
 	movies, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.Movie])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

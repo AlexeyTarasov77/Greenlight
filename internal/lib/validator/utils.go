@@ -2,6 +2,7 @@ package validator
 
 import (
 	"fmt"
+	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/utils"
 	"reflect"
 	"strings"
@@ -82,9 +83,25 @@ func GetErrorMsgForField(obj any, err govalidator.FieldError) (errorMsg string) 
 			errorMsg = "Value must be a valid email address"
 		case "alphanum":
 			errorMsg = "Value must be alphanumeric"
+		case "sortbymoviefield":
+			errorMsg = "Value must be a name of one of the movie fields (e.g. +title, -year, etc...)"
 		default:
 			errorMsg = "This field is invalid"
 		}
 	}
 	return
+}
+
+// CUSTOM VALIDATORS
+
+func ValidateSortByMovieField(fl govalidator.FieldLevel) bool {
+	sort := fl.Field().String()
+	t := reflect.TypeOf(models.Movie{})
+	sort = strings.TrimPrefix(sort, "-")
+	fieldName := strings.ToUpper(string(sort[0])) + sort[1:]
+	fmt.Println(fieldName)
+	if _, ok := t.FieldByNameFunc(func(s string) bool { return strings.EqualFold(fieldName, s) }); !ok {
+		return false
+	}
+	return true
 }

@@ -7,7 +7,6 @@ import (
 	"greenlight/proj/internal/lib/validator"
 	"greenlight/proj/internal/services/movies"
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/render"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -29,9 +28,10 @@ func (app *Application) getMovie(w http.ResponseWriter, r *http.Request) {
 	}
 	movie, err := app.movies.Get(id)
 	if err != nil {
-		if errors.Is(err, movies.ErrMovieNotFound) {
-			http.NotFound(w, r)
-		} else {
+		switch {
+		case errors.Is(err, movies.ErrMovieNotFound):
+			app.Http.NotFound(w, r, "")
+		default:
 			app.Http.ServerError(w, r, fmt.Errorf("error during retrieving movie from db: %w", err), "")
 		}
 		return
@@ -40,17 +40,42 @@ func (app *Application) getMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
-	const limitUnset = -1
-	limit := limitUnset
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		var err error
-		limit, err = strconv.Atoi(limitStr)
-		if err != nil {
-			app.Http.BadRequest(w, r, "invalid limit param")
-			return
-		}
+	type queryParams struct {
+		Limit int `validate:"omitempty,gt=0" schema:"limit"`
+		Sort  string `validate:"omitempty,sortbymoviefield" schema:"sort,default:-id"`
+		PageSize int `validate:"omitempty,min=1,max=100" schema:"page_size,default:20"`
+		Page int `validate:"omitempty,min=1,max=10000000" schema:"page,default:1"`
+		Title string `validate:"omitempty,max=255"`
+		Year int32 `validate:"omitempty,min=1888,max=2100"`
+		Genres []string `validate:"omitempty,min=1,max=5,unique" schema:"genres"`
 	}
-	movies, err := app.movies.List(limit)
+	app.validator.RegisterValidation("sortbymoviefield", validator.ValidateSortByMovieField)
+	const limitUnset = -1
+	var params queryParams
+	qs := r.URL.Query()
+	// TODO: написать свой декодер
+	// params.Limit = app.readInt(qs, "limit", limitUnset)
+	// params.Sort = app.readString(qs, "sort", "")
+	// params.Page = app.readInt(qs, "page", 1)
+	// params.PageSize = app.readInt(qs, "page_size", 20)
+	if err := app.Decoder.Decode(&params, qs); err != nil {
+		app.log.Error("Error during decoding query params", "msg", err.Error())
+		app.Http.BadRequest(w, r, "Invalid query params provided. Ensure that all query params are valid")
+		return
+	}
+	app.log.Info("query params values", "params", params)
+	if validationErrs := validator.ValidateStruct(app.validator, params); len(validationErrs) > 0 {
+		app.Http.UnprocessableEntity(w, r, validationErrs)
+		return
+	}
+	// if limit not specified set it to unset specific value
+	if params.Limit == 0 {
+		params.Limit = limitUnset
+	}
+	if params.Genres == nil {
+		params.Genres = []string{}
+	}
+	movies, err := app.movies.List(params.Limit, params.Title, params.Genres)
 	if err != nil {
 		app.Http.ServerError(w, r, err, "")
 		return

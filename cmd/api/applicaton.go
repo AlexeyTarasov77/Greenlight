@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	govalidator "github.com/go-playground/validator/v10"
+	"github.com/gorilla/schema"
 )
 
 type Application struct {
@@ -17,6 +18,7 @@ type Application struct {
 	movies    *movies.MovieService
 	validator *govalidator.Validate
 	Sso       *grpc.Client
+	Decoder   *schema.Decoder
 }
 
 func NewApplication(cfg *config.Config, log *slog.Logger, storage *postgres.PostgresDB) *Application {
@@ -31,6 +33,8 @@ func NewApplication(cfg *config.Config, log *slog.Logger, storage *postgres.Post
 	if err != nil {
 		panic(err)
 	}
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
 	app := &Application{
 		cfg:       cfg,
 		log:       log,
@@ -41,6 +45,7 @@ func NewApplication(cfg *config.Config, log *slog.Logger, storage *postgres.Post
 			cfg: cfg,
 		},
 		Sso: sso,
+		Decoder: decoder,
 	}
 	return app
 }

@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc/status"
@@ -81,9 +83,30 @@ func handleJsonErr(err error) error {
 	}
 }
 
-// func (app *Application) readJsonOrBadRequest(w http.ResponseWriter, r *http.Request, data any) {
-// 	if err := app.decodeJSON(r.Body, data); err != nil {
-// 		app.Http.BadRequest(w, r, err.Error())
-// 		return
-// 	}
-// }
+func (app *Application) readString(qs url.Values, key string, defaultValue string) string {
+	val := qs.Get(key)
+	if val == "" {
+		return defaultValue
+	}
+	return val
+}
+
+func (app *Application) readArr(qs url.Values, key string, defaultValue []string) []string {
+	csv := qs.Get(key)
+	if csv == "" {
+		return defaultValue
+	}
+	return strings.Split(csv, ",")
+}
+
+func (app *Application) readInt(qs url.Values, key string, defaultValue int) int {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return defaultValue
+	}
+	return i
+}

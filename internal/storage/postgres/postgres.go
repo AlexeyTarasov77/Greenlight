@@ -73,28 +73,34 @@ func (db *PostgresDB) Insert(ctx context.Context, title string, year int32, runt
 	return &movie, nil
 }
 
-func (db *PostgresDB) List(ctx context.Context, limit int, title string, genres []string, filters filters.Filters) ([]models.Movie, error) {
+func (db *PostgresDB) List(ctx context.Context, title string, genres []string, filters filters.Filters) ([]models.Movie, int, error) {
 	var rows pgx.Rows
 	query := fmt.Sprintf(`
-	SELECT id, title, year, runtime, genres, version, created_at FROM movies
+	SELECT count(*) OVER(), id, title, year, runtime, genres, version, created_at FROM movies
 	WHERE (to_tsvector('english', title) @@ plainto_tsquery('english', $1) OR $1 = '') 
 	AND (genres @> $2 OR $2 = '{}')
 	ORDER BY %s %s, id ASC
+	LIMIT $3 OFFSET $4
 	`, filters.SortColumn(), filters.SortDirection())
-	args := []any{title, genres}
-	if limit != storage.EmptyIntValue {
-		query += " LIMIT $3"
-		args = append(args, limit)
-	}
+	args := []any{title, genres, filters.Limit(), filters.Offset()}
 	rows, _ = db.Conn.Query(ctx, query, args...)
-	movies, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.Movie])
+	type row struct {
+		Count int
+		models.Movie
+	}
+	outputRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[row])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, storage.ErrNotFound
+			return nil, 0, storage.ErrNotFound
 		}
-		return nil, err
+		return nil, 0, err
 	}
-	return movies, nil
+	movies := make([]models.Movie, 0, len(outputRows))
+	for _, row := range outputRows {
+		movies = append(movies, row.Movie)
+	}
+	totalRecords := outputRows[0].Count
+	return movies, totalRecords, nil
 }
 
 func (db *PostgresDB) Update(ctx context.Context, movie *models.Movie) (*models.Movie, error) {

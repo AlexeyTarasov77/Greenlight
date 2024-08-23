@@ -15,7 +15,7 @@ import (
 type MoviesStorage interface {
 	Get(ctx context.Context, id int) (*models.Movie, error)
 	Insert(ctx context.Context, title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error)
-	List(ctx context.Context, limit int, title string, genres []string, filters filters.Filters) ([]models.Movie, error)
+	List(ctx context.Context, title string, genres []string, filters filters.Filters) ([]models.Movie, int, error)
 	Update(ctx context.Context, movie *models.Movie) (*models.Movie, error)
 	Delete(ctx context.Context, id int) error
 }
@@ -66,7 +66,7 @@ func (s *MovieService) Create(title string, year int32, runtime fields.MovieRunt
 	return movie, nil
 }
 
-func (s *MovieService) List(limit int, title string, genres []string, page int, pageSize int, sort string) ([]models.Movie, error) {
+func (s *MovieService) List(title string, genres []string, page int, pageSize int, sort string) ([]models.Movie, int, error) {
 	const op = "movies.MovieService.List"
 	log := s.log.With("op", op)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -82,16 +82,16 @@ func (s *MovieService) List(limit int, title string, genres []string, page int, 
 		Sort: sort,
 		SortSafelist: movieFields,
 	}
-	movies, err := s.storage.List(ctx, limit, title, genres, filters)
+	movies, totalRecords, err := s.storage.List(ctx, title, genres, filters)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			log.Info("movies not found")
-			return nil, ErrMovieNotFound
+			return nil, 0, ErrMovieNotFound
 		}
 		log.Error(err.Error())
-		return nil, err
+		return nil, 0, err
 	}
-	return movies, nil
+	return movies, totalRecords, nil
 }
 
 func (s *MovieService) Update(id int, title *string, year *int32, runtime *fields.MovieRuntime, genres []string) (*models.Movie, error) {

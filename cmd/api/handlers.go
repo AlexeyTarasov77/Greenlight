@@ -6,6 +6,7 @@ import (
 	"greenlight/proj/internal/domain/fields"
 	"greenlight/proj/internal/lib/validator"
 	"greenlight/proj/internal/services/movies"
+	"math"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -41,7 +42,6 @@ func (app *Application) getMovie(w http.ResponseWriter, r *http.Request) {
 
 func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 	type queryParams struct {
-		Limit int `validate:"omitempty,gt=0" schema:"limit"`
 		Sort  string `validate:"omitempty,sortbymoviefield" schema:"sort,default:-id"`
 		PageSize int `validate:"omitempty,min=1,max=100" schema:"page_size,default:20"`
 		Page int `validate:"omitempty,min=1,max=10000000" schema:"page,default:1"`
@@ -50,7 +50,6 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 		Genres []string `validate:"omitempty,min=1,max=5,unique" schema:"genres"`
 	}
 	app.validator.RegisterValidation("sortbymoviefield", validator.ValidateSortByMovieField)
-	const limitUnset = -1
 	var params queryParams
 	qs := r.URL.Query()
 	// TODO: написать свой декодер
@@ -68,15 +67,10 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return
 	}
-	// if limit not specified set it to unset specific value
-	if params.Limit == 0 {
-		params.Limit = limitUnset
-	}
 	if params.Genres == nil {
 		params.Genres = []string{}
 	}
-	movies, err := app.movies.List(
-		params.Limit,
+	movies, totalRecords, err := app.movies.List(
 		params.Title,
 		params.Genres,
 		params.Page,
@@ -87,7 +81,18 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 		app.Http.ServerError(w, r, err, "")
 		return
 	}
-	app.Http.Ok(w, r, envelop{"movies": movies}, "")
+	app.Http.Ok(
+		w, r,
+		envelop{
+			"total_on_page": len(movies),
+			"current_page": params.Page,
+			"page_size": params.PageSize,
+			"total_records": totalRecords,
+			"first_page": 1,
+			"last_page": math.Ceil(float64(totalRecords) / float64(params.PageSize)),
+			"movies": movies,
+		}, "",
+	)
 }
 
 func (app *Application) createMovie(w http.ResponseWriter, r *http.Request) {

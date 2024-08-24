@@ -15,6 +15,7 @@ func (app *Application) routes() http.Handler {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
 	router.Use(app.Recoverer)
+	router.Use(app.RateLimiter)
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Get("/healthcheck", app.healthcheck)
 		r.Route("/movies", func(r chi.Router) {

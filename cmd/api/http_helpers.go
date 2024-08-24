@@ -108,7 +108,7 @@ func (h *Http) ServerError(w http.ResponseWriter, r *http.Request, err error, ms
 		msg = defaultErrMsg
 	}
 	if h.cfg.Debug {
-		msg = msg + "\n" + string(debug.Stack())
+		msg = err.Error() + "\n" + string(debug.Stack())
 		w.WriteHeader(status)
 		w.Write([]byte(msg))
 		return

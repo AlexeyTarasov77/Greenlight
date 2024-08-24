@@ -10,11 +10,18 @@ import (
 
 type Config struct {
 	Debug  bool   `yaml:"debug"`
+	Limiter Limiter `yaml:"limiter"`
 	AppID  int32    `yaml:"app_id"`
 	AppSecret string `yaml:"app_secret"`
 	Server Server `yaml:"server"`
 	DB DB `yaml:"db"`
 	Clients ClientsConfig `yaml:"clients"`
+}
+
+type Limiter struct {
+	Enabled bool `yaml:"enabled"`
+	Rps float64 `yaml:"rps" env-default:"20"`
+	Burst int `yaml:"burst" env-default:"5"`
 }
 
 type Client struct {

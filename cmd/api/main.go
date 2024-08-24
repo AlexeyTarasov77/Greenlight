@@ -7,6 +7,7 @@ import (
 	"greenlight/proj/internal/config"
 	"greenlight/proj/internal/lib/logger/handlers/slogpretty"
 	"greenlight/proj/internal/storage/postgres"
+	"log"
 	"log/slog"
 	"net"
 	"net/http"
@@ -38,6 +39,7 @@ func main() {
 		ReadTimeout: cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 		IdleTimeout: cfg.Server.IdleTimeout,
+		ErrorLog: logAdapter(log),
 	}
 
 	app.log.Info("starting server", "url", fmt.Sprintf("http://%s", server.Addr))
@@ -48,8 +50,23 @@ func main() {
 }
 
 func setupLogger(debug bool) *slog.Logger {
+	var handler slog.Handler
 	if debug {
-		return slog.New(slogpretty.NewPrettyHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		handler = slogpretty.NewPrettyHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+	} else {
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	}
-	return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	return slog.New(handler)
+}
+
+type out struct {
+	stdLog *slog.Logger
+}
+func (l out) Write(p []byte) (n int, err error) {
+	l.stdLog.Info(string(p))
+	return len(p), nil
+}
+
+func logAdapter(logger *slog.Logger) *log.Logger {
+	return log.New(&out{logger}, "", 0)
 }

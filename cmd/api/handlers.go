@@ -62,7 +62,6 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 		app.Http.BadRequest(w, r, "Invalid query params provided. Ensure that all query params are valid")
 		return
 	}
-	app.log.Info("query params values", "params", params)
 	if validationErrs := validator.ValidateStruct(app.validator, params); len(validationErrs) > 0 {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return

@@ -17,6 +17,7 @@ require (
 
 require (
 	github.com/gorilla/schema v1.4.1 // indirect
+	golang.org/x/time v0.6.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240814211410-ddb44dafa142 // indirect
 )
 

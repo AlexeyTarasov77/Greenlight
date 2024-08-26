@@ -40,6 +40,7 @@ type Server struct {
 	ReadTimeout  time.Duration `yaml:"read_timeout" env-default:"2s"`
 	WriteTimeout time.Duration `yaml:"write_timeout" env-default:"2s"`
 	IdleTimeout  time.Duration `yaml:"idle_timeout" env-default:"60s"`
+	ShutdownTimeout time.Duration `yaml:"shutdown_timeout" env-default:"5s"`
 }
 
 type DB struct {

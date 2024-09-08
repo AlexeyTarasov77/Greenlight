@@ -7,6 +7,7 @@ import (
 	"greenlight/proj/internal/lib/validator"
 	"greenlight/proj/internal/services/movies"
 	"math"
+	"net"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -193,7 +194,7 @@ func (app *Application) login(w http.ResponseWriter, r *http.Request) {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return
 	}
-	tokens, err := app.Sso.Login(r.Context(), req.Email, req.Password)
+	tokens, err := app.Services.Auth.Login(r.Context(), req.Email, req.Password)
 	grpcErr, ok := status.FromError(err)
 	httpRespCode := runtime.HTTPStatusFromCode(grpcErr.Code())
 	if grpcErr.Message() != "" {
@@ -222,16 +223,25 @@ func (app *Application) signup(w http.ResponseWriter, r *http.Request) {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return
 	}
-	id, err := app.Sso.Register(r.Context(), req.Email, req.Password)
-	grpcErr, ok := status.FromError(err)
-	httpRespCode := runtime.HTTPStatusFromCode(grpcErr.Code())
-	if grpcErr.Message() != "" {
-		app.handleGRPCError(w, r, grpcErr, httpRespCode)
+	activationLink := net.JoinHostPort(app.cfg.Server.Host, app.cfg.Server.Port) + "/api/v1/accounts/activate/%d"
+	id, err := app.Services.Auth.Signup(r.Context(), req.Email, req.Username, req.Password, activationLink)
+	if err != nil {
+		grpcErr, ok := status.FromError(err)
+		if ok {
+			httpRespCode := runtime.HTTPStatusFromCode(grpcErr.Code())
+			if grpcErr.Message() != "" {
+				app.handleGRPCError(w, r, grpcErr, httpRespCode)
+			} else {
+				app.Http.ServerError(w, r, err, "")
+			}
+		} else {
+			app.Http.ServerError(w, r, err, "")
+		}
 		return
 	}
-	if ok {
-		app.Http.Created(w, r, envelop{"id": id}, "User successfully created")
-		return
-	}
-	app.Http.ServerError(w, r, err, "")
+	app.Http.Created(w, r, envelop{"id": id}, "User successfully created. Please check your email for activation link to activate your account")
+}
+
+func (app *Application) activateAccount(w http.ResponseWriter, r *http.Request) {
+	panic("unimplemented")
 }

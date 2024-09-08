@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"greenlight/proj/internal/services/auth"
 	"log/slog"
 	"time"
 
@@ -57,32 +58,28 @@ func New(
 }
 
 func (c *Client) IsAdmin(ctx context.Context, userID int64) (bool, error) {
-	_, err := c.api.IsAdmin(ctx, &ssov1.IsAdminRequest{UserId: userID})
+	resp, err := c.api.IsAdmin(ctx, &ssov1.IsAdminRequest{UserId: userID})
 	if err != nil {
 		c.log.Error("Error calling Client.IsAdmin", "errMsg", err.Error())
-		return false, err
+		return resp.GetIsAdmin(), err
 	}
-	return true, nil
+	return resp.GetIsAdmin(), nil
 }
 
-type Tokens struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
 
-func (c *Client) Login(ctx context.Context, email, password string) (*Tokens, error) {
+func (c *Client) Login(ctx context.Context, email, password string) (*auth.Tokens, error) {
 	resp, err := c.api.Login(ctx, &ssov1.LoginRequest{Email: email, Password: password, AppId: c.appId})
 	if err != nil {
 		c.log.Error("Error calling Client.Login", "errMsg", err.Error())
 		return nil, err
 	}
-	return &Tokens{AccessToken: resp.AccessToken, RefreshToken: resp.RefreshToken}, nil
+	return &auth.Tokens{AccessToken: resp.GetAccessToken(), RefreshToken: resp.GetRefreshToken()}, nil
 }
 
-func (c *Client) Register(ctx context.Context, email, password string) (int64, error) {
+func (c *Client) Register(ctx context.Context, email, username, password string) (int64, error) {
 	resp, err := c.api.Register(
 		ctx,
-		&ssov1.RegisterRequest{Email: email, Password: password, Username: email},
+		&ssov1.RegisterRequest{Email: email, Password: password, Username: username},
 	)
 	if err != nil {
 		c.log.Error("Error calling Client.Register", "errMsg", err.Error())

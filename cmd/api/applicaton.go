@@ -1,8 +1,8 @@
 package main
 
 import (
-	"greenlight/proj/internal/clients/sso/grpc"
 	"greenlight/proj/internal/config"
+	"greenlight/proj/internal/services"
 	"greenlight/proj/internal/services/movies"
 	"greenlight/proj/internal/storage/postgres"
 	"log/slog"
@@ -17,34 +17,23 @@ type Application struct {
 	Http      *Http
 	movies    *movies.MovieService
 	validator *govalidator.Validate
-	Sso       *grpc.Client
+	Services  *services.Services
 	Decoder   *schema.Decoder
 }
 
 func NewApplication(cfg *config.Config, log *slog.Logger, storage *postgres.PostgresDB) *Application {
-	movies := movies.New(log, storage)
-	sso, err := grpc.New(
-		log,
-		cfg.AppID,
-		cfg.Clients.SSO.Addr,
-		cfg.Clients.SSO.RetryTimeout,
-		cfg.Clients.SSO.RetriesCount,
-	)
-	if err != nil {
-		panic(err)
-	}
+	services := services.New(log, cfg, storage)
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
 	app := &Application{
 		cfg:       cfg,
 		log:       log,
 		validator: govalidator.New(govalidator.WithRequiredStructEnabled()),
-		movies:    movies,
 		Http: &Http{
 			log: log,
 			cfg: cfg,
 		},
-		Sso: sso,
+		Services: services,
 		Decoder: decoder,
 	}
 	return app

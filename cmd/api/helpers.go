@@ -28,7 +28,7 @@ func (app *Application) extractIDParam(w http.ResponseWriter, r *http.Request) (
 }
 
 func (app *Application) handleGRPCError(w http.ResponseWriter, r *http.Request, grpcErr *status.Status, status int) {
-	app.log.Info("Sso login response msg not empty", "raw message", grpcErr.Message())
+	app.log.Debug("GRPC error", "raw message", grpcErr.Message())
 	parsedErrors := make(map[string]string)
 	if err := json.Unmarshal([]byte(grpcErr.Message()), &parsedErrors); err != nil {
 		app.log.Error("Error decoding grpc error message", "errMsg", err.Error())

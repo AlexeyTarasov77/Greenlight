@@ -35,7 +35,6 @@ func (app *Application) RateLimiter(next http.Handler) http.Handler {
 	var mu sync.Mutex
 	go func() {
 		for {
-			log.Debug("Running clients cleanup process")
 			mu.Lock()
 			for ip, client := range clients {
 				if time.Since(client.lastSeen) > 5*time.Minute {
@@ -43,7 +42,7 @@ func (app *Application) RateLimiter(next http.Handler) http.Handler {
 				}
 			}
 			mu.Unlock()
-			time.Sleep(1 * time.Minute)
+			time.Sleep(5 * time.Minute)
 		}
 	}()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

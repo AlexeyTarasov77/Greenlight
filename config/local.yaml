@@ -8,8 +8,13 @@ server:
   write_timeout: 5s
   idle_timeout: 120s
   shutdown_timeout: 3s
+smtp_server:
+  host: sandbox.smtp.mailtrap.io
+  port: 2525
+  timeout: 5s
+  sender: Greenlight <no-reply@greenlight.com>
 db:
-  dsn: "postgres://std_user:1234@localhost/greenlight?sslmode=disable"
+  dsn: "postgres://std_user:1234@localhost:5454/greenlight?sslmode=disable"
   max_conns: 10
   max_conn_idle_time: 5m
 

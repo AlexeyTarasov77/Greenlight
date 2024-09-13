@@ -223,7 +223,7 @@ func (app *Application) signup(w http.ResponseWriter, r *http.Request) {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return
 	}
-	activationLink := net.JoinHostPort(app.cfg.Server.Host, app.cfg.Server.Port) + "/api/v1/accounts/activate/%d"
+	activationLink := fmt.Sprintf("http://%s", net.JoinHostPort(app.cfg.Server.Host, app.cfg.Server.Port)) + "/api/v1/accounts/activate/%d"
 	id, err := app.Services.Auth.Signup(r.Context(), req.Email, req.Username, req.Password, activationLink)
 	if err != nil {
 		grpcErr, ok := status.FromError(err)

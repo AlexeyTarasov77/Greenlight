@@ -3,20 +3,12 @@ package auth
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"log/slog"
 )
 
 type MailProvider interface {
 	Send(recipient string, tmplName string, tmplData any) error
-}
-
-type Transaction interface {
-	Commit(ctx context.Context) error
-	Rollback(ctx context.Context) error
-}
-
-type TransactionManager interface {
-	Begin(ctx context.Context) (Transaction, error)
 }
 
 type Tokens struct {
@@ -30,24 +22,28 @@ type SsoProvider interface {
 	IsAdmin(ctx context.Context, userID int64) (bool, error)
 }
 
+type TaskExecutor interface {
+	Add(task func())
+}
+
 type AuthService struct {
 	log *slog.Logger
 	Mailer MailProvider
 	sso SsoProvider
-	transactions TransactionManager
+	taskExecutor TaskExecutor
 }
 
 func New(
 	log *slog.Logger,
 	mailer MailProvider,
 	ssoProvider SsoProvider,
-	transactions TransactionManager,
+	taskExecutor TaskExecutor,
 ) *AuthService {
 	return &AuthService{
 		log: log,
 		Mailer: mailer,
 		sso: ssoProvider,
-		transactions: transactions,
+		taskExecutor: taskExecutor,
 	}
 }
 
@@ -60,10 +56,12 @@ func (a *AuthService) Signup(ctx context.Context, email, username, password, act
 		return 0, err
 	}
 	activationLink = fmt.Sprintf(activationLink, userID)
-	if err := a.Mailer.Send(email, "user_welcome.html", map[string]interface{}{"activationLink": activationLink, "username": username}); err != nil {
-		log.Error("Error calling sending mail with activation link", "errMsg", err.Error())
-		return 0, err
-	}
+	a.taskExecutor.Add(func() {
+		log.Info("sending mail with activation link", "activationLink", activationLink)
+		if err := a.Mailer.Send(email, "user_welcome.html", map[string]interface{}{"activationLink": template.URL(activationLink), "username": username, "id": userID}); err != nil {
+			log.Error("Error calling sending mail with activation link", "errMsg", err.Error())
+		}
+	})
 	return userID, nil
 }
 

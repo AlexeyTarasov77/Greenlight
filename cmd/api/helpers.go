@@ -31,7 +31,7 @@ func (app *Application) handleGRPCError(w http.ResponseWriter, r *http.Request, 
 	app.log.Debug("GRPC error", "raw message", grpcErr.Message())
 	parsedErrors := make(map[string]string)
 	if err := json.Unmarshal([]byte(grpcErr.Message()), &parsedErrors); err != nil {
-		app.log.Error("Error decoding grpc error message", "errMsg", err.Error())
+		app.log.Error("Error decoding grpc error message", "err", err, "msg", grpcErr.Message())
 		app.Http.ServerError(w, r, err, "")
 		return
 	}

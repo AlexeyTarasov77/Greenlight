@@ -7,7 +7,6 @@ import (
 	"greenlight/proj/internal/domain/fields"
 	"greenlight/proj/internal/domain/filters"
 	"greenlight/proj/internal/domain/models"
-	"greenlight/proj/internal/services/auth"
 	"greenlight/proj/internal/storage"
 	"time"
 
@@ -18,26 +17,6 @@ import (
 
 type PostgresDB struct {
 	Conn *pgxpool.Pool
-}
-
-type pgxTxWrapper struct {
-    Tx pgx.Tx
-}
-
-func (tx *pgxTxWrapper) Commit(ctx context.Context) error {
-    return tx.Tx.Commit(ctx)
-}
-
-func (tx *pgxTxWrapper) Rollback(ctx context.Context) error {
-    return tx.Tx.Rollback(ctx)
-}
-
-func (db *PostgresDB) Begin(ctx context.Context) (auth.Transaction, error) {
-	tx, err := db.Conn.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &pgxTxWrapper{tx}, nil
 }
 
 const ErrConflictCode = "23505"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"greenlight/proj/internal/api/tasks"
 	"greenlight/proj/internal/config"
 	"greenlight/proj/internal/services"
 	"greenlight/proj/internal/services/movies"
@@ -19,10 +20,13 @@ type Application struct {
 	validator *govalidator.Validate
 	Services  *services.Services
 	Decoder   *schema.Decoder
+	BackgroundTasks *tasks.BackgroudTasks
 }
 
 func NewApplication(cfg *config.Config, log *slog.Logger, storage *postgres.PostgresDB) *Application {
-	services := services.New(log, cfg, storage)
+	bgTasks := tasks.New(log, 3, 10)
+	bgTasks.Run()
+	services := services.New(log, cfg, storage, bgTasks)
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
 	app := &Application{
@@ -35,6 +39,7 @@ func NewApplication(cfg *config.Config, log *slog.Logger, storage *postgres.Post
 		},
 		Services: services,
 		Decoder: decoder,
+		BackgroundTasks: bgTasks,
 	}
 	return app
 }

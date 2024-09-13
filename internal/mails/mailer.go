@@ -20,14 +20,16 @@ var templateFS embed.FS
 type Mailer struct {
 	Dialer *mail.Dialer
 	Sender string
+	RetriesCount int
 }
 
-func New(host string, port int, timeout time.Duration, username, password, sender string) *Mailer {
+func New(host string, port int, timeout time.Duration, username, password, sender string, retriesCount int) *Mailer {
 	dialer := mail.NewDialer(host, port, sender, password)
 	dialer.Timeout = timeout
 	return &Mailer{
 		Dialer: dialer,
 		Sender: sender,
+		RetriesCount: retriesCount,
 	}
 }
 
@@ -62,13 +64,21 @@ func (m *Mailer) Send(recipient string, tmplName string, tmplData any) error {
 	msg.SetHeader("Subject", tmplPartials["subject"])
 	msg.SetBody("text/plain", tmplPartials["plainBody"])
 	msg.SetBody("text/html", tmplPartials["htmlBody"])
-	return m.Dialer.DialAndSend(msg)
+	for i := 0; i < m.RetriesCount; i++ {
+		err = m.Dialer.DialAndSend(msg)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return err
 }
 
 
 type ApiMailer struct {
 	ApiToken string
 	Sender string
+	RetriesCount int
 }
 
 func (m *ApiMailer) Send(recipient string, tmplName string, tmplData any) error {
@@ -96,23 +106,32 @@ func (m *ApiMailer) Send(recipient string, tmplName string, tmplData any) error 
 	}
 	req.Header.Add("Authorization", "Bearer " + m.ApiToken)
 	req.Header.Set("Content-Type", "application/json")
-	res, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-	var bodyParsed map[string]any
-	err = json.Unmarshal(body, &bodyParsed)
-	if err == nil {
-		_, ok := bodyParsed["errors"]
-		if ok {
-			return fmt.Errorf("failed to send email: %s", bodyParsed["errors"])
+	var resp *http.Response
+	for i := 0; i < m.RetriesCount; i++ {
+		resp, err = client.Do(req)
+		if err == nil {
+			break
 		}
+		time.Sleep(500 * time.Millisecond)
 	}
-	fmt.Println(string(body))
-	defer res.Body.Close()
+	if err != nil {
+		return err
+	}
+	if resp != nil {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		var bodyParsed map[string]any
+		err = json.Unmarshal(body, &bodyParsed)
+		if err == nil {
+			_, ok := bodyParsed["errors"]
+			if ok {
+				return fmt.Errorf("failed to send email: %s", bodyParsed["errors"])
+			}
+		}
+		fmt.Println(string(body))
+		defer resp.Body.Close()
+	}
 	return nil
 }

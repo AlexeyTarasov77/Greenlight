@@ -15,7 +15,7 @@ type Services struct {
 	Movies *movies.MovieService
 }
 
-func New(log *slog.Logger, cfg *config.Config, storage *postgres.PostgresDB) *Services {
+func New(log *slog.Logger, cfg *config.Config, storage *postgres.PostgresDB, taskExecutor auth.TaskExecutor) *Services {
 	// mailer := mails.New(
 	// 	cfg.SMTPServer.Host,
 	// 	cfg.SMTPServer.Port,
@@ -27,6 +27,7 @@ func New(log *slog.Logger, cfg *config.Config, storage *postgres.PostgresDB) *Se
 	mailer := &mails.ApiMailer{
 		ApiToken: cfg.SMTPServer.ApiToken,
 		Sender:   cfg.SMTPServer.Sender,
+		RetriesCount: cfg.SMTPServer.RetriesCount,
 	}
 	sso, err := grpc.New(
 		log,
@@ -39,7 +40,7 @@ func New(log *slog.Logger, cfg *config.Config, storage *postgres.PostgresDB) *Se
 		panic(err)
 	}
 	return &Services{
-		Auth:   auth.New(log, mailer, sso, storage),
+		Auth:   auth.New(log, mailer, sso, taskExecutor),
 		Movies: movies.New(log, storage),
 	}
 }

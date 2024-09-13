@@ -28,6 +28,7 @@ type SMTP struct {
 	Sender   string        `yaml:"sender" env-required:"true"`
 	Timeout  time.Duration `yaml:"timeout" env-default:"5s"`
 	ApiToken string        `yaml:"api_token" env-required:"true" env:"SMTP_API_TOKEN"`
+	RetriesCount int 	   `yaml:"retries_count" env-default:"1"`
 }
 
 type Limiter struct {

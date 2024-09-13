@@ -13,6 +13,7 @@ smtp_server:
   port: 2525
   timeout: 5s
   sender: Greenlight <no-reply@greenlight.com>
+  retries_count: 3
 db:
   dsn: "postgres://std_user:1234@localhost:5454/greenlight?sslmode=disable"
   max_conns: 10

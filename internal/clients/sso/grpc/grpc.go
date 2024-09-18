@@ -20,10 +20,11 @@ type Client struct {
 	appId     int32
 }
 
-// New creates a new Client instance.
-//
-// It takes a context, a logger, an address of the gRPC server, a timeout for retry call, and a retries count as parameters.
-// Returns a Client instance and an error.
+/* New creates a new Client instance.
+It takes a context, a logger, an address of the gRPC server, a timeout for retry call,
+and a retries count as parameters.
+Returns a Client instance and an error.
+*/
 func New(
 	log *slog.Logger,
 	appId int32,
@@ -76,17 +77,26 @@ func (c *Client) Login(ctx context.Context, email, password string) (*auth.Token
 	return &auth.Tokens{AccessToken: resp.GetAccessToken(), RefreshToken: resp.GetRefreshToken()}, nil
 }
 
-func (c *Client) Register(ctx context.Context, email, username, password string) (int64, error) {
+func (c *Client) Register(ctx context.Context, email, username, password string) (*auth.SignupData, error) {
 	resp, err := c.api.Register(
 		ctx,
 		&ssov1.RegisterRequest{Email: email, Password: password, Username: username},
 	)
 	if err != nil {
 		c.log.Error("Error calling Client.Register", "errMsg", err.Error())
-		return 0, err
+		return nil, err
 	}
-	return resp.GetUserId(), nil
+	return &auth.SignupData{UserID: resp.GetUserId(), ActivationToken: resp.GetActivationToken()}, nil
 }
+
+// func (c *Client) ActivateUser(ctx context.Context, token string) (bool, error) {
+// 	resp, err := c.api.ActivateUser(ctx, &ssov1.ActivateUserRequest{ActivationToken: token})
+// 	if err != nil {
+// 		c.log.Error("Error calling Client.ActivateUser", "errMsg", err.Error())
+// 		return false, err
+// 	}
+// 	return resp.Activated, nil
+// }
 
 // Adapter for grpclogging.Logger used to adapt it to slog.Logger
 func InterceptorLogger(log *slog.Logger) grpclogging.Logger {

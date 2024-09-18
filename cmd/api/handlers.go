@@ -43,12 +43,12 @@ func (app *Application) getMovie(w http.ResponseWriter, r *http.Request) {
 
 func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 	type queryParams struct {
-		Sort  string `validate:"omitempty,sortbymoviefield" schema:"sort,default:-id"`
-		PageSize int `validate:"omitempty,min=1,max=100" schema:"page_size,default:20"`
-		Page int `validate:"omitempty,min=1,max=10000000" schema:"page,default:1"`
-		Title string `validate:"omitempty,max=255"`
-		Year int32 `validate:"omitempty,min=1888,max=2100"`
-		Genres []string `validate:"omitempty,min=1,max=5,unique" schema:"genres"`
+		Sort     string   `validate:"omitempty,sortbymoviefield" schema:"sort,default:-id"`
+		PageSize int      `validate:"omitempty,min=1,max=100" schema:"page_size,default:20"`
+		Page     int      `validate:"omitempty,min=1,max=10000000" schema:"page,default:1"`
+		Title    string   `validate:"omitempty,max=255"`
+		Year     int32    `validate:"omitempty,min=1888,max=2100"`
+		Genres   []string `validate:"omitempty,min=1,max=5,unique" schema:"genres"`
 	}
 	app.validator.RegisterValidation("sortbymoviefield", validator.ValidateSortByMovieField)
 	var params queryParams
@@ -85,12 +85,12 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 		w, r,
 		envelop{
 			"total_on_page": len(movies),
-			"current_page": params.Page,
-			"page_size": params.PageSize,
+			"current_page":  params.Page,
+			"page_size":     params.PageSize,
 			"total_records": totalRecords,
-			"first_page": 1,
-			"last_page": math.Ceil(float64(totalRecords) / float64(params.PageSize)),
-			"movies": movies,
+			"first_page":    1,
+			"last_page":     math.Ceil(float64(totalRecords) / float64(params.PageSize)),
+			"movies":        movies,
 		}, "",
 	)
 }
@@ -133,7 +133,7 @@ func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
 		Title   *string              `validate:"omitempty,max=255,min=1"`
 		Year    *int32               `validate:"omitempty,min=1888,max=2100"`
 		Runtime *fields.MovieRuntime `validate:"omitempty,gt=0"`
-		Genres  []string            `validate:"omitempty,min=1,max=5,unique"`
+		Genres  []string             `validate:"omitempty,min=1,max=5,unique"`
 	}
 	var req request
 	if err := app.readJSON(w, r, &req); err != nil {
@@ -223,8 +223,14 @@ func (app *Application) signup(w http.ResponseWriter, r *http.Request) {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return
 	}
-	activationLink := fmt.Sprintf("http://%s", net.JoinHostPort(app.cfg.Server.Host, app.cfg.Server.Port)) + "/api/v1/accounts/activate/%d"
-	id, err := app.Services.Auth.Signup(r.Context(), req.Email, req.Username, req.Password, activationLink)
+	activationLink := fmt.Sprintf(
+		"PUT http://%s%s",
+		net.JoinHostPort(app.cfg.Server.Host, app.cfg.Server.Port),
+		"/api/v1/accounts/activate/",
+	)
+	userID, err := app.Services.Auth.Signup(
+		r.Context(), req.Email, req.Username, req.Password, activationLink,
+	)
 	if err != nil {
 		grpcErr, ok := status.FromError(err)
 		if ok {
@@ -239,9 +245,21 @@ func (app *Application) signup(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	app.Http.Created(w, r, envelop{"id": id}, "User successfully created. Please check your email for activation link to activate your account")
+	app.Http.Created(w, r, envelop{"id": userID}, "User successfully created. Please check your email for activation link to activate your account")
 }
 
 func (app *Application) activateAccount(w http.ResponseWriter, r *http.Request) {
-	panic("unimplemented")
+	// userID, extracted := app.extractIDParam(w, r)
+	// if !extracted {
+	// 	return
+	// }
+	// err := app.Services.Auth.ActivateAccount(r.Context(), userID)
+	// if err != nil {
+	// 	if errors.Is(err, auth.ErrCantActivateUser) {
+	// 		app.Http.ServerError(w, r, err, "Cannot activate account. Please try again later.")
+	// 	}
+	// 	app.Http.ServerError(w, r, err, "")
+	// 	return
+	// }
+	// app.Http.NoContent(w, r, "Account successfully activated")
 }

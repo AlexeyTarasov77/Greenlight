@@ -26,7 +26,7 @@ func (app *Application) routes() http.Handler {
 			r.Post("/", app.createMovie)
 		})
 		r.Route("/accounts", func(r chi.Router) {
-			r.Post("/activate/{id}", app.activateAccount)
+			r.Put("/activate/", app.activateAccount)
 			r.Post("/login", app.login)
 			r.Post("/signup", app.signup)
 		})

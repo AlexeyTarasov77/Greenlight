@@ -3,7 +3,7 @@ module greenlight/proj
 go 1.22.5
 
 require (
-	github.com/AlexeySHA256/protos v0.0.2
+	github.com/AlexeySHA256/protos v0.0.8
 	github.com/fatih/color v1.17.0
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/chi/v5 v5.1.0

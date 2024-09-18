@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"html/template"
 	"log/slog"
 )
@@ -17,9 +16,9 @@ type Tokens struct {
 }
 
 type SsoProvider interface {
-	Register(ctx context.Context, email, username, password string) (int64, error)
+	Register(ctx context.Context, email, username, password string) (*SignupData, error)
 	Login(ctx context.Context, email, password string) (*Tokens, error)
-	IsAdmin(ctx context.Context, userID int64) (bool, error)
+	// ActivateUser(ctx context.Context, token string) (bool, error)
 }
 
 type TaskExecutor interface {
@@ -27,9 +26,9 @@ type TaskExecutor interface {
 }
 
 type AuthService struct {
-	log *slog.Logger
-	Mailer MailProvider
-	sso SsoProvider
+	log          *slog.Logger
+	Mailer       MailProvider
+	sso          SsoProvider
 	taskExecutor TaskExecutor
 }
 
@@ -40,29 +39,42 @@ func New(
 	taskExecutor TaskExecutor,
 ) *AuthService {
 	return &AuthService{
-		log: log,
-		Mailer: mailer,
-		sso: ssoProvider,
+		log:          log,
+		Mailer:       mailer,
+		sso:          ssoProvider,
 		taskExecutor: taskExecutor,
 	}
+}
+
+type SignupData struct {
+	UserID          int64
+	ActivationToken string
 }
 
 func (a *AuthService) Signup(ctx context.Context, email, username, password, activationLink string) (int64, error) {
 	const op = "auth.AuthService.Signup"
 	log := a.log.With("op", op, "email", email)
-	userID, err := a.sso.Register(ctx, email, username, password)
+	data, err := a.sso.Register(ctx, email, username, password)
 	if err != nil {
 		log.Error("Error calling Sso.Register", "errMsg", err.Error())
 		return 0, err
 	}
-	activationLink = fmt.Sprintf(activationLink, userID)
 	a.taskExecutor.Add(func() {
-		log.Info("sending mail with activation link", "activationLink", activationLink)
-		if err := a.Mailer.Send(email, "user_welcome.html", map[string]interface{}{"activationLink": template.URL(activationLink), "username": username, "id": userID}); err != nil {
-			log.Error("Error calling sending mail with activation link", "errMsg", err.Error())
+		log.Info("sending mail")
+		err = a.Mailer.Send(
+			email,
+			"user_welcome.html",
+			map[string]interface{}{
+				"activationLink":  template.URL(activationLink),
+				"username":        username,
+				"userID":          data.UserID,
+				"activationToken": data.ActivationToken,
+			})
+		if err != nil {
+			log.Error("Error sending activation email", "errMsg", err.Error())
 		}
 	})
-	return userID, nil
+	return data.UserID, nil
 }
 
 func (a *AuthService) Login(ctx context.Context, email, password string) (*Tokens, error) {

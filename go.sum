@@ -1,5 +1,9 @@
 github.com/AlexeySHA256/protos v0.0.2 h1:MuQIeS3GTWZxVxJpfnOrtzXmrLaBTzWjiCPNUiWlGyo=
 github.com/AlexeySHA256/protos v0.0.2/go.mod h1:7187SUlaNKuvAz4GMJJtOURDe3Z/QwdUs/VDYVPb44k=
+github.com/AlexeySHA256/protos v0.0.7 h1:wQ4F+2Lhsr1HRKpn9c8tWxg1uryDFW3AmXB7vBvRTDE=
+github.com/AlexeySHA256/protos v0.0.7/go.mod h1:7187SUlaNKuvAz4GMJJtOURDe3Z/QwdUs/VDYVPb44k=
+github.com/AlexeySHA256/protos v0.0.8 h1:dA9hxB0ChbPE6sR+AFDJ2dBETolkCApQP7UVz8t3mwo=
+github.com/AlexeySHA256/protos v0.0.8/go.mod h1:7187SUlaNKuvAz4GMJJtOURDe3Z/QwdUs/VDYVPb44k=
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/ajg/form v1.5.1 h1:t9c7v8JUKu/XxOGBU0yjNpaMloxGEJhUkqFRq0ibGeU=

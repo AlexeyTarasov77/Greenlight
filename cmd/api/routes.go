@@ -7,10 +7,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+const activationURL = "PUT '/api/v1/accounts/activation/'"
+
 func (app *Application) routes() http.Handler {
 	router := chi.NewRouter()
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		app.Http.NotFound(w, r, "")
+		app.Http.NotFound(w, r, "Page not found")
 	})
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
@@ -26,7 +28,8 @@ func (app *Application) routes() http.Handler {
 			r.Post("/", app.createMovie)
 		})
 		r.Route("/accounts", func(r chi.Router) {
-			r.Put("/activate/", app.activateAccount)
+			r.Post("/activation/new-token", app.getNewActivationToken)
+			r.Put("/activation", app.activateAccount)
 			r.Post("/login", app.login)
 			r.Post("/signup", app.signup)
 		})

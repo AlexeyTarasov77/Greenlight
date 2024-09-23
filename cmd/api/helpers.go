@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"greenlight/proj/internal/lib/validator"
 	"io"
 	"net/http"
 	"net/url"
@@ -25,6 +26,18 @@ func (app *Application) extractIDParam(w http.ResponseWriter, r *http.Request) (
 		return 0, false
 	}
 	return id, true
+}
+
+func (app *Application) readReqBodyAndValidate(w http.ResponseWriter, r *http.Request, dst any) (success bool) {
+	if err := app.readJSON(w, r, &dst); err != nil {
+		app.Http.BadRequest(w, r, err.Error())
+		return
+	}
+	if validationErrs := validator.ValidateStruct(app.validator, dst); len(validationErrs) > 0 {
+		app.Http.UnprocessableEntity(w, r, validationErrs)
+		return
+	}
+	return true
 }
 
 func (app *Application) handleGRPCError(w http.ResponseWriter, r *http.Request, grpcErr *status.Status, status int) {

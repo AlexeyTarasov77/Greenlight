@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"greenlight/proj/internal/domain/fields"
 	"greenlight/proj/internal/lib/validator"
+	"greenlight/proj/internal/services/auth"
 	"greenlight/proj/internal/services/movies"
 	"math"
-	"net"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -223,13 +223,8 @@ func (app *Application) signup(w http.ResponseWriter, r *http.Request) {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return
 	}
-	activationLink := fmt.Sprintf(
-		"PUT http://%s%s",
-		net.JoinHostPort(app.cfg.Server.Host, app.cfg.Server.Port),
-		"/api/v1/accounts/activate/",
-	)
 	userID, err := app.Services.Auth.Signup(
-		r.Context(), req.Email, req.Username, req.Password, activationLink,
+		r.Context(), req.Email, req.Username, req.Password, activationURL,
 	)
 	if err != nil {
 		grpcErr, ok := status.FromError(err)
@@ -245,7 +240,31 @@ func (app *Application) signup(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	app.log.Debug("User created", "id", userID)
 	app.Http.Created(w, r, envelop{"id": userID}, "User successfully created. Please check your email for activation link to activate your account")
+}
+
+func (app *Application) getNewActivationToken(w http.ResponseWriter, r *http.Request) {
+	type request struct {
+		Email string `validate:"required,email"`
+	}
+	var req request
+	if !app.readReqBodyAndValidate(w, r, &req) {
+		return
+	}
+
+	err := app.Services.Auth.GetNewActivationToken(r.Context(), req.Email, activationURL)
+	if err != nil {
+		switch {
+			case errors.Is(err, auth.ErrUserNotFound):
+				app.Http.NotFound(w, r, err.Error())
+			case errors.Is(err, auth.ErrInvalidData):
+				app.Http.BadRequest(w, r, err.Error())
+		}
+		app.Http.ServerError(w, r, err, "")
+		return
+	}
+	app.Http.NoContent(w, r, "New activation token sent to your email")
 }
 
 func (app *Application) activateAccount(w http.ResponseWriter, r *http.Request) {

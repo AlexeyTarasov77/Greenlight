@@ -268,17 +268,25 @@ func (app *Application) getNewActivationToken(w http.ResponseWriter, r *http.Req
 }
 
 func (app *Application) activateAccount(w http.ResponseWriter, r *http.Request) {
-	// userID, extracted := app.extractIDParam(w, r)
-	// if !extracted {
-	// 	return
-	// }
-	// err := app.Services.Auth.ActivateAccount(r.Context(), userID)
-	// if err != nil {
-	// 	if errors.Is(err, auth.ErrCantActivateUser) {
-	// 		app.Http.ServerError(w, r, err, "Cannot activate account. Please try again later.")
-	// 	}
-	// 	app.Http.ServerError(w, r, err, "")
-	// 	return
-	// }
-	// app.Http.NoContent(w, r, "Account successfully activated")
+	type request struct {
+		ActivationToken string `json:"activation_token" validate:"required,min=26"`
+	}
+	var req request
+	if !app.readReqBodyAndValidate(w, r, &req) {
+		return
+	}
+	user, err := app.Services.Auth.ActivateUser(r.Context(), req.ActivationToken)
+	if err != nil {
+		switch {
+			case errors.Is(err, auth.ErrUserNotFound):
+				app.Http.NotFound(w, r, err.Error())
+			case errors.Is(err, auth.ErrInvalidData):
+				app.Http.BadRequest(w, r, err.Error())
+			case errors.Is(err, auth.ErrUserAlreadyActivated):
+				app.Http.Conflict(w, r, err.Error())
+		}
+		app.Http.ServerError(w, r, err, "")
+		return
+	}
+	app.Http.Created(w, r, envelop{"user": user}, "Account successfully activated")
 }

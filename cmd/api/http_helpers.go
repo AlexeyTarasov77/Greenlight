@@ -53,47 +53,31 @@ func (h *Http) Response(w http.ResponseWriter, r *http.Request, data envelop, ms
 }
 
 func (h *Http) Ok(w http.ResponseWriter, r *http.Request, data envelop, msg string) {
-	status := http.StatusOK
-	render.Status(r, status)
-	render.JSON(w, r, h.NewResponse(data, msg, status))
+	h.Response(w, r, data, msg, http.StatusOK)
 }
 
 func (h *Http) Created(w http.ResponseWriter, r *http.Request, data envelop, msg string) {
-	status := http.StatusCreated
-	render.Status(r, status)
-	render.JSON(w, r, h.NewResponse(data, msg, status))
+	h.Response(w, r, data, msg, http.StatusCreated)
 }
 
 func (h *Http) NoContent(w http.ResponseWriter, r *http.Request, msg string) {
-	status := http.StatusNoContent
-	render.Status(r, status)
-	render.JSON(w, r, h.NewResponse(nil, msg, status))
+	h.Response(w, r, nil, msg, http.StatusNoContent)
 }
 
 func (h *Http) BadRequest(w http.ResponseWriter, r *http.Request, msg string) {
-	status := http.StatusBadRequest
-	render.Status(r, status)
-	render.JSON(w, r, h.NewResponse(nil, msg, status))
+	h.Response(w, r, nil, msg, http.StatusBadRequest)
 }
 
 func (h *Http) Conflict(w http.ResponseWriter, r *http.Request, msg string) {
-	status := http.StatusConflict
-	render.Status(r, status)
-	render.JSON(w, r, h.NewResponse(nil, msg, status))
+	h.Response(w, r, nil, msg, http.StatusConflict)
 }
 
 func (h *Http) UnprocessableEntity(w http.ResponseWriter, r *http.Request, errors map[string]string) {
-	status := http.StatusUnprocessableEntity
-	render.Status(r, status)
-	render.JSON(w, r, h.NewResponse(envelop{
-		"errors": errors,
-	}, "", status))
+	h.Response(w, r, envelop{"errors": errors}, "", http.StatusUnprocessableEntity)
 }
 
 func (h *Http) NotFound(w http.ResponseWriter, r *http.Request, msg string) {
-	status := http.StatusNotFound
-	render.Status(r, status)
-	render.JSON(w, r, h.NewResponse(nil, msg, status))
+	h.Response(w, r, nil, msg, http.StatusNotFound)
 }
 
 func (h *Http) ServerError(w http.ResponseWriter, r *http.Request, err error, msg string) {

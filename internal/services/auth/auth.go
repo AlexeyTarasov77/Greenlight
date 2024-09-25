@@ -2,9 +2,9 @@ package auth
 
 import (
 	"context"
+	"greenlight/proj/internal/domain/models"
 	"html/template"
 	"log/slog"
-	"time"
 )
 
 type MailProvider interface {
@@ -16,16 +16,6 @@ type TokensDTO struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-type UserDTO struct {
-	ID        int64
-	Username  string
-	Email     string
-	Role      string
-	IsActive  bool
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
 type GetUserParams struct {
 	ID       int64
 	Email    string
@@ -35,9 +25,9 @@ type GetUserParams struct {
 type SsoProvider interface {
 	Register(ctx context.Context, email, username, password string) (*SignupData, error)
 	Login(ctx context.Context, email, password string) (*TokensDTO, error)
-	GetUser(ctx context.Context, params GetUserParams) (*UserDTO, error)
+	GetUser(ctx context.Context, params GetUserParams) (*models.User, error)
+	ActivateUser(ctx context.Context, plainToken string) (*models.User, error)
 	NewActivationToken(ctx context.Context, email string) (string, error)
-	// ActivateUser(ctx context.Context, token string) (bool, error)
 }
 
 type TaskExecutor interface {
@@ -141,4 +131,12 @@ func (a *AuthService) GetNewActivationToken(ctx context.Context, email string, a
 		})
 	})
 	return nil
+}
+
+func (a *AuthService) ActivateUser(ctx context.Context, plainToken string) (*models.User, error) {
+	user, err := a.sso.ActivateUser(ctx, plainToken)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }

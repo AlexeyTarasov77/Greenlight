@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/services/auth"
 	"log/slog"
 	"time"
@@ -97,7 +98,7 @@ func (c *Client) Register(ctx context.Context, email, username, password string)
 	return &auth.SignupData{UserID: resp.GetUserId(), ActivationToken: resp.GetActivationToken()}, nil
 }
 
-func (c *Client) GetUser(ctx context.Context, params auth.GetUserParams) (*auth.UserDTO, error) {
+func (c *Client) GetUser(ctx context.Context, params auth.GetUserParams) (*models.User, error) {
 	const op = "grpc.Client.GetUser"
 	log := c.log.With("op", op)
 	resp, err := c.api.GetUser(ctx, &ssov1.GetUserRequest{Id: params.ID, Email: params.Email, IsActive: params.IsActive})
@@ -124,10 +125,50 @@ func (c *Client) GetUser(ctx context.Context, params auth.GetUserParams) (*auth.
 	if err != nil {
 		return nil, err
 	}
-	return &auth.UserDTO{
+	return &models.User{
 		ID: user.GetId(), Email: user.GetEmail(),
 		Username: user.GetUsername(), IsActive: user.GetIsActive(),
 		CreatedAt: createdAt, UpdatedAt: updatedAt,
+	}, nil
+}
+
+func (c *Client) ActivateUser(ctx context.Context, plainToken string) (*models.User, error) {
+	const op = "grpc.Client.ActivateUser"
+	log := c.log.With("op", op)
+	resp, err := c.api.ActivateUser(ctx, &ssov1.ActivateUserRequest{ActivationToken: plainToken})
+	if err != nil {
+		grpcErr, ok := status.FromError(err)
+		if ok {
+			switch grpcErr.Code() {
+			case codes.NotFound:
+				return nil, auth.ErrUserNotFound
+			case codes.InvalidArgument:
+				return nil, auth.ErrInvalidData.SetMessage(grpcErr.Message())
+			case codes.AlreadyExists:
+				return nil, auth.ErrUserAlreadyActivated
+			}
+		}
+		log.Error("Error", "errMsg", err.Error())
+		return nil, err
+	}
+	user := resp.GetUser()
+	const timeParseLayout = "2006-01-02 15:04:05.999999 -0700 MST"
+	updatedAt, err := time.Parse(timeParseLayout, user.GetUpdatedAt())
+	if err != nil {
+		return nil, err
+	}
+	createdAt, err := time.Parse(timeParseLayout, user.GetCreatedAt())
+	if err != nil {
+		return nil, err
+	}
+	return &models.User{
+		ID: user.GetId(),
+		Email: user.GetEmail(),
+		Username: user.GetUsername(),
+		Role: user.GetRole(),
+		IsActive: user.GetIsActive(),
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
 	}, nil
 }
 
@@ -142,14 +183,6 @@ func (c *Client) NewActivationToken(ctx context.Context, email string) (string, 
 	return resp.GetActivationToken(), nil
 }
 
-// func (c *Client) ActivateUser(ctx context.Context, token string) (bool, error) {
-// 	resp, err := c.api.ActivateUser(ctx, &ssov1.ActivateUserRequest{ActivationToken: token})
-// 	if err != nil {
-// 		c.log.Error("Error calling Client.ActivateUser", "errMsg", err.Error())
-// 		return false, err
-// 	}
-// 	return resp.Activated, nil
-// }
 
 // Adapter for grpclogging.Logger used to adapt it to slog.Logger
 func InterceptorLogger(log *slog.Logger) grpclogging.Logger {

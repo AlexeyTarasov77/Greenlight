@@ -3,7 +3,7 @@ module greenlight/proj
 go 1.22.5
 
 require (
-	github.com/AlexeySHA256/protos v0.1.0
+	github.com/AlexeySHA256/protos v0.1.1
 	github.com/fatih/color v1.17.0
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/chi/v5 v5.1.0
@@ -20,6 +20,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240814211410-ddb44dafa142 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect

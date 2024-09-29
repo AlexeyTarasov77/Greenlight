@@ -183,6 +183,16 @@ func (c *Client) NewActivationToken(ctx context.Context, email string) (string, 
 	return resp.GetActivationToken(), nil
 }
 
+func (c *Client) VerifyToken(ctx context.Context, token string) (bool, error) {
+	const op = "grpc.Client.VerifyToken"
+	log := c.log.With("op", op)
+	resp, err := c.api.VerifyToken(ctx, &ssov1.VerifyTokenRequest{Token: token, AppId: c.appId})
+	if err != nil {
+		log.Error("Error", "errMsg", err.Error())
+		return false, err
+	}
+	return resp.GetIsValid(), nil
+}
 
 // Adapter for grpclogging.Logger used to adapt it to slog.Logger
 func InterceptorLogger(log *slog.Logger) grpclogging.Logger {

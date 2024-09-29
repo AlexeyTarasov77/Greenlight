@@ -68,6 +68,10 @@ func (h *Http) BadRequest(w http.ResponseWriter, r *http.Request, msg string) {
 	h.Response(w, r, nil, msg, http.StatusBadRequest)
 }
 
+func (h *Http) Unauthorized(w http.ResponseWriter, r *http.Request, msg string) {
+	h.Response(w, r, nil, msg, http.StatusUnauthorized)
+}
+
 func (h *Http) Conflict(w http.ResponseWriter, r *http.Request, msg string) {
 	h.Response(w, r, nil, msg, http.StatusConflict)
 }

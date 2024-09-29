@@ -28,6 +28,7 @@ type SsoProvider interface {
 	GetUser(ctx context.Context, params GetUserParams) (*models.User, error)
 	ActivateUser(ctx context.Context, plainToken string) (*models.User, error)
 	NewActivationToken(ctx context.Context, email string) (string, error)
+	VerifyToken(ctx context.Context, token string) (bool, error)
 }
 
 type TaskExecutor interface {
@@ -139,4 +140,12 @@ func (a *AuthService) ActivateUser(ctx context.Context, plainToken string) (*mod
 		return nil, err
 	}
 	return user, nil
+}
+
+func (a *AuthService) VerifyToken(ctx context.Context, token string) (bool, error) {
+	return a.sso.VerifyToken(ctx, token)
+}
+
+func (a *AuthService) GetUser(ctx context.Context, params GetUserParams) (*models.User, error) {
+	return a.sso.GetUser(ctx, params)
 }

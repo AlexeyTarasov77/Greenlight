@@ -8,6 +8,8 @@ github.com/AlexeySHA256/protos v0.0.9 h1:GqHJfzVb8L25ya6iMV8t7OEWogKczLYwgj99g+Q
 github.com/AlexeySHA256/protos v0.0.9/go.mod h1:7187SUlaNKuvAz4GMJJtOURDe3Z/QwdUs/VDYVPb44k=
 github.com/AlexeySHA256/protos v0.1.0 h1:aNcUKFXoelUeoqFWFzyyETzJt5eL/2J4Oy6SWG03Osk=
 github.com/AlexeySHA256/protos v0.1.0/go.mod h1:7187SUlaNKuvAz4GMJJtOURDe3Z/QwdUs/VDYVPb44k=
+github.com/AlexeySHA256/protos v0.1.1 h1:var8qin1NcEyVIISKd3WjO1IGxg6ntJbXTeY25AdxZo=
+github.com/AlexeySHA256/protos v0.1.1/go.mod h1:7187SUlaNKuvAz4GMJJtOURDe3Z/QwdUs/VDYVPb44k=
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/ajg/form v1.5.1 h1:t9c7v8JUKu/XxOGBU0yjNpaMloxGEJhUkqFRq0ibGeU=
@@ -36,6 +38,8 @@ github.com/go-playground/universal-translator v0.18.1 h1:Bcnm0ZwsGyWbCzImXv+pAJn
 github.com/go-playground/universal-translator v0.18.1/go.mod h1:xekY+UJKNuX9WP91TpwSH2VMlDf28Uj24BCp08ZFTUY=
 github.com/go-playground/validator/v10 v10.22.0 h1:k6HsTZ0sTnROkhS//R0O+55JgM8C4Bx7ia+JlgcnOao=
 github.com/go-playground/validator/v10 v10.22.0/go.mod h1:dbuPbCMFw/DrkbEynArYaCwl3amGuJotoKCe95atGMM=
+github.com/golang-jwt/jwt/v5 v5.2.1 h1:OuVbFODueb089Lh128TAcimifWaLhJwVflnrgM17wHk=
+github.com/golang-jwt/jwt/v5 v5.2.1/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/gorilla/schema v1.4.1 h1:jUg5hUjCSDZpNGLuXQOgIWGdlgrIdYvgQ0wZtdK1M3E=

@@ -26,6 +26,15 @@ type User struct {
 	UpdatedAt    time.Time
 }
 
+type Review struct {
+	ID        int64
+	MovieID   int64
+	Comment      string
+	Rating    int
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type AuthTokens struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`

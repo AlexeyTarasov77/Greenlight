@@ -103,12 +103,7 @@ func (app *Application) createMovie(w http.ResponseWriter, r *http.Request) {
 		Genres  []string            `validate:"required,min=1,max=5,unique"`
 	}
 	var req request
-	if err := app.readJSON(w, r, &req); err != nil {
-		app.Http.BadRequest(w, r, err.Error())
-		return
-	}
-	if validationErrs := validator.ValidateStruct(app.validator, req); len(validationErrs) > 0 {
-		app.Http.UnprocessableEntity(w, r, validationErrs)
+	if !app.readReqBodyAndValidate(w, r, &req) {
 		return
 	}
 	createdMovie, err := app.movies.Create(req.Title, req.Year, req.Runtime, req.Genres)
@@ -136,12 +131,7 @@ func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
 		Genres  []string             `validate:"omitempty,min=1,max=5,unique"`
 	}
 	var req request
-	if err := app.readJSON(w, r, &req); err != nil {
-		app.Http.BadRequest(w, r, err.Error())
-		return
-	}
-	if validationErrs := validator.ValidateStruct(app.validator, req); len(validationErrs) > 0 {
-		app.Http.UnprocessableEntity(w, r, validationErrs)
+	if !app.readReqBodyAndValidate(w, r, &req) {
 		return
 	}
 	updatedMovie, err := app.movies.Update(id, req.Title, req.Year, req.Runtime, req.Genres)
@@ -186,12 +176,7 @@ func (app *Application) login(w http.ResponseWriter, r *http.Request) {
 		Password string `validate:"required,min=8"`
 	}
 	var req request
-	if err := app.readJSON(w, r, &req); err != nil {
-		app.Http.BadRequest(w, r, err.Error())
-		return
-	}
-	if validationErrs := validator.ValidateStruct(app.validator, req); len(validationErrs) > 0 {
-		app.Http.UnprocessableEntity(w, r, validationErrs)
+	if !app.readReqBodyAndValidate(w, r, &req) {
 		return
 	}
 	tokens, err := app.Services.Auth.Login(r.Context(), req.Email, req.Password)
@@ -215,12 +200,7 @@ func (app *Application) signup(w http.ResponseWriter, r *http.Request) {
 		Password string `validate:"required,min=8"`
 	}
 	var req request
-	if err := app.readJSON(w, r, &req); err != nil {
-		app.Http.BadRequest(w, r, err.Error())
-		return
-	}
-	if validationErrs := validator.ValidateStruct(app.validator, req); len(validationErrs) > 0 {
-		app.Http.UnprocessableEntity(w, r, validationErrs)
+	if !app.readReqBodyAndValidate(w, r, &req) {
 		return
 	}
 	userID, err := app.Services.Auth.Signup(
@@ -290,3 +270,20 @@ func (app *Application) activateAccount(w http.ResponseWriter, r *http.Request) 
 	}
 	app.Http.Created(w, r, envelop{"user": user}, "Account successfully activated")
 }
+
+// reviews handlers
+
+// func (app *Application) createReviewForMovie(w http.ResponseWriter, r *http.Request) {
+// 	if !app.isAuthorizedRequest(w, r) {
+// 		return
+// 	}
+// 	type request struct {
+// 		Rating  int32  `validate:"required,gt=0,lt=6"`
+// 		Comment string `validate:"omitempty,max=255"`
+// 		MovieID int64 `validate:"required,gt=0"`
+// 	}
+// 	var req request
+// 	if !app.readReqBodyAndValidate(w, r, &req) {
+// 		return
+// 	}
+// }

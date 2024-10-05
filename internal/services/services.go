@@ -6,6 +6,7 @@ import (
 	"greenlight/proj/internal/mails"
 	"greenlight/proj/internal/services/auth"
 	"greenlight/proj/internal/services/movies"
+	"greenlight/proj/internal/services/reviews"
 	"greenlight/proj/internal/storage/postgres"
 	"log/slog"
 )
@@ -13,17 +14,10 @@ import (
 type Services struct {
 	Auth   *auth.AuthService
 	Movies *movies.MovieService
+	Reviews *reviews.ReviewService
 }
 
 func New(log *slog.Logger, cfg *config.Config, storage *postgres.PostgresDB, taskExecutor auth.TaskExecutor) *Services {
-	// mailer := mails.New(
-	// 	cfg.SMTPServer.Host,
-	// 	cfg.SMTPServer.Port,
-	// 	cfg.SMTPServer.Timeout,
-	// 	cfg.SMTPServer.Username,
-	// 	cfg.SMTPServer.Password,
-	// 	cfg.SMTPServer.Sender,
-	// )
 	mailer := &mails.ApiMailer{
 		ApiToken: cfg.SMTPServer.ApiToken,
 		Sender:   cfg.SMTPServer.Sender,
@@ -42,5 +36,6 @@ func New(log *slog.Logger, cfg *config.Config, storage *postgres.PostgresDB, tas
 	return &Services{
 		Auth:   auth.New(log, mailer, sso, taskExecutor),
 		Movies: movies.New(log, storage),
+		Reviews: reviews.New(log, storage),
 	}
 }

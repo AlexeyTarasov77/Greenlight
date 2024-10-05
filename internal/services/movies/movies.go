@@ -66,6 +66,14 @@ func (s *MovieService) Create(title string, year int32, runtime fields.MovieRunt
 	return movie, nil
 }
 
+// func (s *MovieService) AddReview(rating int32, comment string, movieID int64) error {
+// 	const op = "movies.MovieService.AddReview"
+// 	log := s.log.With("op", op, "rating", rating, "comment", comment, "movieID", movieID)
+// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+// 	defer cancel()
+// 	// s.storage.Update(ctx, &models.Movie{ID: movieID, Rating: rating, Comment: comment})
+// }
+
 func (s *MovieService) List(title string, genres []string, page int, pageSize int, sort string) ([]models.Movie, int, error) {
 	const op = "movies.MovieService.List"
 	log := s.log.With("op", op)

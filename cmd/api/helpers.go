@@ -28,6 +28,14 @@ func (app *Application) extractIDParam(w http.ResponseWriter, r *http.Request) (
 	return id, true
 }
 
+func (app *Application) isAuthorizedRequest(w http.ResponseWriter, r *http.Request) bool {
+	if r.Context().Value(CtxKeyUser) != "" {
+		app.Http.Unauthorized(w, r, "unauthorized")
+		return false
+	}
+	return true
+}
+
 func (app *Application) readReqBodyAndValidate(w http.ResponseWriter, r *http.Request, dst any) (success bool) {
 	if err := app.readJSON(w, r, &dst); err != nil {
 		app.Http.BadRequest(w, r, err.Error())

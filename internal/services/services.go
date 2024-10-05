@@ -8,21 +8,23 @@ import (
 	"greenlight/proj/internal/services/movies"
 	"greenlight/proj/internal/services/reviews"
 	"greenlight/proj/internal/storage/postgres"
+	"greenlight/proj/internal/storage/postgres/models"
 	"log/slog"
 )
 
 type Services struct {
-	Auth   *auth.AuthService
-	Movies *movies.MovieService
+	Auth    *auth.AuthService
+	Movies  *movies.MovieService
 	Reviews *reviews.ReviewService
 }
 
-func New(log *slog.Logger, cfg *config.Config, storage *postgres.PostgresDB, taskExecutor auth.TaskExecutor) *Services {
+func New(log *slog.Logger, cfg *config.Config, storage *postgres.Storage, taskExecutor auth.TaskExecutor) *Services {
 	mailer := &mails.ApiMailer{
-		ApiToken: cfg.SMTPServer.ApiToken,
-		Sender:   cfg.SMTPServer.Sender,
+		ApiToken:     cfg.SMTPServer.ApiToken,
+		Sender:       cfg.SMTPServer.Sender,
 		RetriesCount: cfg.SMTPServer.RetriesCount,
 	}
+	models := models.New(storage)
 	sso, err := grpc.New(
 		log,
 		cfg.AppID,
@@ -34,8 +36,8 @@ func New(log *slog.Logger, cfg *config.Config, storage *postgres.PostgresDB, tas
 		panic(err)
 	}
 	return &Services{
-		Auth:   auth.New(log, mailer, sso, taskExecutor),
-		Movies: movies.New(log, storage),
-		Reviews: reviews.New(log, storage),
+		Auth:    auth.New(log, mailer, sso, taskExecutor),
+		Movies:  movies.New(log, models.Movie),
+		Reviews: reviews.New(log, models.Review),
 	}
 }

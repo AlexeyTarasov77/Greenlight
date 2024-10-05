@@ -4,7 +4,6 @@ import (
 	"greenlight/proj/internal/api/tasks"
 	"greenlight/proj/internal/config"
 	"greenlight/proj/internal/services"
-	"greenlight/proj/internal/services/movies"
 	"greenlight/proj/internal/storage/postgres"
 	"log/slog"
 
@@ -13,17 +12,16 @@ import (
 )
 
 type Application struct {
-	cfg       *config.Config
-	log       *slog.Logger
-	Http      *Http
-	movies    *movies.MovieService
-	validator *govalidator.Validate
-	Services  *services.Services
-	Decoder   *schema.Decoder
+	cfg             *config.Config
+	log             *slog.Logger
+	Http            *Http
+	validator       *govalidator.Validate
+	Services        *services.Services
+	Decoder         *schema.Decoder
 	BackgroundTasks *tasks.BackgroudTasks
 }
 
-func NewApplication(cfg *config.Config, log *slog.Logger, storage *postgres.PostgresDB) *Application {
+func NewApplication(cfg *config.Config, log *slog.Logger, storage *postgres.Storage) *Application {
 	bgTasks := tasks.New(log, 3, 10)
 	bgTasks.Run()
 	services := services.New(log, cfg, storage, bgTasks)
@@ -37,8 +35,8 @@ func NewApplication(cfg *config.Config, log *slog.Logger, storage *postgres.Post
 			log: log,
 			cfg: cfg,
 		},
-		Services: services,
-		Decoder: decoder,
+		Services:        services,
+		Decoder:         decoder,
 		BackgroundTasks: bgTasks,
 	}
 	return app

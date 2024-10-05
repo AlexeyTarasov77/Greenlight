@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"greenlight/proj/internal/domain/fields"
+	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/lib/validator"
 	"greenlight/proj/internal/services/auth"
 	"greenlight/proj/internal/services/movies"
+	"greenlight/proj/internal/services/reviews"
 	"math"
 	"net/http"
 
@@ -28,7 +30,7 @@ func (app *Application) getMovie(w http.ResponseWriter, r *http.Request) {
 	if !extracted {
 		return
 	}
-	movie, err := app.movies.Get(id)
+	movie, err := app.Services.Movies.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, movies.ErrMovieNotFound):
@@ -53,11 +55,6 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 	app.validator.RegisterValidation("sortbymoviefield", validator.ValidateSortByMovieField)
 	var params queryParams
 	qs := r.URL.Query()
-	// TODO: написать свой декодер
-	// params.Limit = app.readInt(qs, "limit", limitUnset)
-	// params.Sort = app.readString(qs, "sort", "")
-	// params.Page = app.readInt(qs, "page", 1)
-	// params.PageSize = app.readInt(qs, "page_size", 20)
 	if err := app.Decoder.Decode(&params, qs); err != nil {
 		app.log.Error("Error during decoding query params", "msg", err.Error())
 		app.Http.BadRequest(w, r, "Invalid query params provided. Ensure that all query params are valid")
@@ -70,7 +67,7 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 	if params.Genres == nil {
 		params.Genres = []string{}
 	}
-	movies, totalRecords, err := app.movies.List(
+	movies, totalRecords, err := app.Services.Movies.List(
 		params.Title,
 		params.Genres,
 		params.Page,
@@ -106,7 +103,7 @@ func (app *Application) createMovie(w http.ResponseWriter, r *http.Request) {
 	if !app.readReqBodyAndValidate(w, r, &req) {
 		return
 	}
-	createdMovie, err := app.movies.Create(req.Title, req.Year, req.Runtime, req.Genres)
+	createdMovie, err := app.Services.Movies.Create(req.Title, req.Year, req.Runtime, req.Genres)
 	if err != nil {
 		if errors.Is(err, movies.ErrMovieAlreadyExists) {
 			app.Http.Conflict(w, r, err.Error())
@@ -134,7 +131,7 @@ func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
 	if !app.readReqBodyAndValidate(w, r, &req) {
 		return
 	}
-	updatedMovie, err := app.movies.Update(id, req.Title, req.Year, req.Runtime, req.Genres)
+	updatedMovie, err := app.Services.Movies.Update(id, req.Title, req.Year, req.Runtime, req.Genres)
 	if err != nil {
 		switch {
 		case errors.Is(err, movies.ErrMovieNotFound):
@@ -156,7 +153,7 @@ func (app *Application) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	if !extracted {
 		return
 	}
-	err := app.movies.Delete(id)
+	err := app.Services.Movies.Delete(id)
 	if err != nil {
 		if errors.Is(err, movies.ErrMovieNotFound) {
 			app.Http.NotFound(w, r, err.Error())
@@ -236,10 +233,10 @@ func (app *Application) getNewActivationToken(w http.ResponseWriter, r *http.Req
 	err := app.Services.Auth.GetNewActivationToken(r.Context(), req.Email, activationURL)
 	if err != nil {
 		switch {
-			case errors.Is(err, auth.ErrUserNotFound):
-				app.Http.NotFound(w, r, err.Error())
-			case errors.Is(err, auth.ErrInvalidData):
-				app.Http.BadRequest(w, r, err.Error())
+		case errors.Is(err, auth.ErrUserNotFound):
+			app.Http.NotFound(w, r, err.Error())
+		case errors.Is(err, auth.ErrInvalidData):
+			app.Http.BadRequest(w, r, err.Error())
 		}
 		app.Http.ServerError(w, r, err, "")
 		return
@@ -258,12 +255,12 @@ func (app *Application) activateAccount(w http.ResponseWriter, r *http.Request) 
 	user, err := app.Services.Auth.ActivateUser(r.Context(), req.ActivationToken)
 	if err != nil {
 		switch {
-			case errors.Is(err, auth.ErrUserNotFound):
-				app.Http.NotFound(w, r, err.Error())
-			case errors.Is(err, auth.ErrInvalidData):
-				app.Http.BadRequest(w, r, err.Error())
-			case errors.Is(err, auth.ErrUserAlreadyActivated):
-				app.Http.Conflict(w, r, err.Error())
+		case errors.Is(err, auth.ErrUserNotFound):
+			app.Http.NotFound(w, r, err.Error())
+		case errors.Is(err, auth.ErrInvalidData):
+			app.Http.BadRequest(w, r, err.Error())
+		case errors.Is(err, auth.ErrUserAlreadyActivated):
+			app.Http.Conflict(w, r, err.Error())
 		}
 		app.Http.ServerError(w, r, err, "")
 		return
@@ -273,17 +270,31 @@ func (app *Application) activateAccount(w http.ResponseWriter, r *http.Request) 
 
 // reviews handlers
 
-// func (app *Application) createReviewForMovie(w http.ResponseWriter, r *http.Request) {
-// 	if !app.isAuthorizedRequest(w, r) {
-// 		return
-// 	}
-// 	type request struct {
-// 		Rating  int32  `validate:"required,gt=0,lt=6"`
-// 		Comment string `validate:"omitempty,max=255"`
-// 		MovieID int64 `validate:"required,gt=0"`
-// 	}
-// 	var req request
-// 	if !app.readReqBodyAndValidate(w, r, &req) {
-// 		return
-// 	}
-// }
+func (app *Application) addReviewForMovie(w http.ResponseWriter, r *http.Request) {
+	if !app.isAuthorizedRequest(w, r) {
+		return
+	}
+	movieID, extracted := app.extractIDParam(w, r)
+	if !extracted {
+		return
+	}
+	type request struct {
+		Rating  int32  `validate:"required,gt=0,lt=6"`
+		Comment string `validate:"omitempty,max=255"`
+	}
+	var req request
+	if !app.readReqBodyAndValidate(w, r, &req) {
+		return
+	}
+	userID := r.Context().Value(CtxKeyUser).(*models.User).ID
+	review, err := app.Services.Reviews.Create(req.Rating, req.Comment, int64(movieID), userID)
+	if err != nil {
+		if errors.Is(err, reviews.ErrReviewAlreadyExists) {
+			app.Http.Conflict(w, r, "You have already reviewed this movie")
+			return
+		}
+		app.Http.ServerError(w, r, err, "")
+		return
+	}
+	app.Http.Created(w, r, envelop{"review": review}, "Review successfully created")
+}

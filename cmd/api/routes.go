@@ -27,6 +27,7 @@ func (app *Application) routes() http.Handler {
 			r.Delete("/{id}", app.deleteMovie)
 			r.Get("/", app.getMovies)
 			r.Post("/", app.createMovie)
+			r.Post("/{id}/review", app.addReviewForMovie)
 		})
 		r.Route("/accounts", func(r chi.Router) {
 			r.Post("/activation/new-token", app.getNewActivationToken)

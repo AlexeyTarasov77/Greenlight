@@ -16,23 +16,24 @@ type Movie struct {
 }
 
 type User struct {
-	ID           int64
-	Username     string
-	PasswordHash []byte
-	Email        string
-	Role         string
-	IsActive     bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID           int64 `json:"id"`
+	Username     string `json:"username"`
+	PasswordHash []byte `json:"password"`
+	Email        string	`json:"email"`
+	Role         string `json:"role"`
+	IsActive     bool `json:"is_active"`
+	CreatedAt    time.Time `json:"-"`
+	UpdatedAt    time.Time `json:"-"`
 }
 
 type Review struct {
-	ID        int64
-	MovieID   int64
-	Comment      string
-	Rating    int
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        int64 `json:"id"`
+	MovieID   int64 `json:"movie_id"`
+	UserID    int64 `json:"user_id"`
+	Comment   string `json:"comment"`
+	Rating    int `json:"rating"`
+	CreatedAt time.Time `json:"-"`
+	UpdatedAt time.Time `json:"-"`
 }
 
 type AuthTokens struct {

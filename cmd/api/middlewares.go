@@ -19,7 +19,13 @@ func (app *Application) Recoverer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil && err != http.ErrAbortHandler {
-				app.Http.ServerError(w, r, err.(error), "")
+				app.log.Info("panic recovered", "err", err)
+				if _, ok := err.(error); !ok {
+					app.log.Error("Invalid error from panic", "err", err)
+					app.Http.ServerError(w, r, errors.New("internal server error"), "")
+				} else {
+					app.Http.ServerError(w, r, err.(error), "")
+				}
 			}
 		}()
 

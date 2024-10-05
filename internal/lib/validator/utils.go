@@ -11,10 +11,14 @@ import (
 )
 
 func getFieldName(obj any, origFieldName string) (fieldName string) {
-	t := reflect.TypeOf(obj)
+	objV := reflect.ValueOf(obj)
+	if objV.Kind() == reflect.Ptr {
+		objV = objV.Elem()
+	}
+	t := objV.Type()
 	field, found := t.FieldByName(origFieldName)
 	if !found {
-		panic(fmt.Sprintf("Field %s not found in type %s", origFieldName, t.Name()))
+		panic(fmt.Errorf("field %s not found in type %s, obj: %v", origFieldName, t.Name(), obj))
 	}
 	if tag := field.Tag.Get("json"); tag != "" && tag != "-" {
 		jsonName := strings.Split(tag, ",")[0]
@@ -36,6 +40,10 @@ func ProcessValidationErrors(obj any, errs govalidator.ValidationErrors) map[str
 }
 
 func ValidateStruct(validator *govalidator.Validate, obj any) (validationErrs map[string]string) {
+	objV := reflect.ValueOf(obj)
+	if objV.Kind() != reflect.Ptr || objV.Elem().Kind() != reflect.Struct {
+		panic("validator.utils.ValidateStruct: obj must be a pointer to a struct")
+	}
 	if err := validator.Struct(obj); err != nil {
 		validationErrs = ProcessValidationErrors(obj, err.(govalidator.ValidationErrors))
 	}
@@ -43,7 +51,11 @@ func ValidateStruct(validator *govalidator.Validate, obj any) (validationErrs ma
 }
 
 func GetErrorMsgForField(obj any, err govalidator.FieldError) (errorMsg string) {
-	t := reflect.TypeOf(obj)
+	objV := reflect.ValueOf(obj)
+	if objV.Kind() == reflect.Ptr {
+		objV = objV.Elem()
+	}
+	t := objV.Type()
 	field, found := t.FieldByName(err.StructField())
 	if !found {
 		panic(fmt.Sprintf("Field %s not found in type %s", err.StructField(), t.Name()))

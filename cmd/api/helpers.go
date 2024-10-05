@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/lib/validator"
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -29,7 +31,7 @@ func (app *Application) extractIDParam(w http.ResponseWriter, r *http.Request) (
 }
 
 func (app *Application) isAuthorizedRequest(w http.ResponseWriter, r *http.Request) bool {
-	if r.Context().Value(CtxKeyUser) != "" {
+	if r.Context().Value(CtxKeyUser).(*models.User) == nil {
 		app.Http.Unauthorized(w, r, "unauthorized")
 		return false
 	}
@@ -37,7 +39,11 @@ func (app *Application) isAuthorizedRequest(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *Application) readReqBodyAndValidate(w http.ResponseWriter, r *http.Request, dst any) (success bool) {
-	if err := app.readJSON(w, r, &dst); err != nil {
+	dstV := reflect.ValueOf(dst)
+	if dstV.Kind() != reflect.Ptr || dstV.Elem().Kind() != reflect.Struct {
+		panic("api.helpers.readReqBodyAndValidate: dst must be a pointer to a struct")
+	}
+	if err := app.readJSON(w, r, dst); err != nil {
 		app.Http.BadRequest(w, r, err.Error())
 		return
 	}
@@ -67,7 +73,7 @@ func (app *Application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 	dec.DisallowUnknownFields()
 	err := dec.Decode(dst)
 	if err != nil {
-		return handleJsonErr(err)
+		return parseJsonErr(err)
 	}
 	err = dec.Decode(&struct{}{})
 	if err != io.EOF {
@@ -77,7 +83,7 @@ func (app *Application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 	return nil
 }
 
-func handleJsonErr(err error) error {
+func parseJsonErr(err error) error {
 	var syntaxError *json.SyntaxError
 	var unmarshalTypeError *json.UnmarshalTypeError
 	var invalidUnmarshalError *json.InvalidUnmarshalError

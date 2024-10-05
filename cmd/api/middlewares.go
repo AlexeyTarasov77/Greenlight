@@ -87,34 +87,10 @@ func (app *Application) RateLimiter(next http.Handler) http.Handler {
 	})
 }
 
-// func (app *Application) LoginRequired(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		httpUnathorized := func() {
-// 			app.Http.Response(w, r, nil, "Unauthorized", http.StatusUnauthorized)
-// 		}
-// 		const bearerLength = len("Bearer ")
-// 		authHeader := r.Header.Get("Authorization")
-// 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") || len(authHeader) < bearerLength+1 {
-// 			httpUnathorized()
-// 			return
-// 		}
-// 		token := strings.TrimPrefix(authHeader, "Bearer ")
-
-// 		isValidToken, err := app.Services.Auth.VerifyToken(r.Context(), token)
-// 		if err != nil || !isValidToken {
-// 			httpUnathorized()
-// 			return
-// 		}
-// 		next.ServeHTTP(w, r)
-// 	})
-// }
-
-type CtxKey string
-
-const CtxKeyUser CtxKey = "user"
-
 func (app *Application) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Vary", "Authorization")
+
 		var user *models.User
 
 		authHeader := r.Header.Get("Authorization")
@@ -123,7 +99,7 @@ func (app *Application) Authenticate(next http.Handler) http.Handler {
 			const bearerLength = len("Bearer ")
 			if !strings.HasPrefix(authHeader, "Bearer ") || len(authHeader) < bearerLength+1 {
 				app.log.Warn("Invalid auth header", "header", authHeader)
-				app.Http.BadRequest(w, r, "Invalid Authorization header, should be 'Bearer <token>'")
+				app.Http.BadRequest(w, r, "Invalid Authorization header, should have format: 'Bearer <token>'")
 				return
 			}
 			token := strings.TrimPrefix(authHeader, "Bearer ")
@@ -135,15 +111,15 @@ func (app *Application) Authenticate(next http.Handler) http.Handler {
 			}
 			if !isValidToken {
 				app.log.Warn("Invalid or expired token", "token", token)
-				app.Http.Unauthorized(w, r, "Invalid or expired token")
+				app.Http.InvalidAuthToken(w, r)
 				return
 			}
 			parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
 				return []byte(app.cfg.AppSecret), nil
 			})
 			if err != nil {
-				app.log.Error("Failed to parse token", "error", err)
-				app.Http.ServerError(w, r, err, "")
+				app.log.Warn("Failed to parse token", "error", err)
+				app.Http.InvalidAuthToken(w, r)
 				return
 			}
 
@@ -157,6 +133,7 @@ func (app *Application) Authenticate(next http.Handler) http.Handler {
 						switch {
 						case errors.Is(err, auth.ErrUserNotFound):
 							app.log.Warn("user not found", "user_id", userID)
+							app.Http.InvalidAuthToken(w, r)
 						default:
 							app.log.Error("Failed to get user", "error", err)
 							app.Http.ServerError(w, r, err, "")
@@ -167,6 +144,22 @@ func (app *Application) Authenticate(next http.Handler) http.Handler {
 			}
 		}
 		r = r.WithContext(context.WithValue(r.Context(), CtxKeyUser, user))
+		next.ServeHTTP(w, r)
+	})
+}
+
+
+// Depends on Authenticate middleware
+func (app *Application) AuthenticationRequired(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, ok := r.Context().Value(CtxKeyUser).(*models.User)
+		if !ok {
+			panic("middlewares.AuthenticationRequired: No user in request context, maybe you forgot to use middlewares.Authenticate middleware before?")
+		}
+		if user == nil {
+			app.Http.Unauthorized(w, r, "unauthorized")
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }

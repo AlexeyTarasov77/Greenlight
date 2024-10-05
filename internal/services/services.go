@@ -37,7 +37,7 @@ func New(log *slog.Logger, cfg *config.Config, storage *postgres.Storage, taskEx
 	}
 	return &Services{
 		Auth:    auth.New(log, mailer, sso, taskExecutor),
-		Movies:  movies.New(log, models.Movie),
+		Movies:  movies.New(log, models.Movie, models.Review),
 		Reviews: reviews.New(log, models.Review),
 	}
 }

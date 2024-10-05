@@ -72,6 +72,11 @@ func (h *Http) Unauthorized(w http.ResponseWriter, r *http.Request, msg string) 
 	h.Response(w, r, nil, msg, http.StatusUnauthorized)
 }
 
+func (h *Http) InvalidAuthToken(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("WWW-Authenticate", "Bearer")
+	h.Unauthorized(w, r, "Invalid or expired authentication token in authorization header")
+}
+
 func (h *Http) Conflict(w http.ResponseWriter, r *http.Request, msg string) {
 	h.Response(w, r, nil, msg, http.StatusConflict)
 }

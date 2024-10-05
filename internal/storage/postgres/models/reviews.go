@@ -28,3 +28,15 @@ func (m *ReviewModel) Insert(ctx context.Context, rating int32, comment string, 
 	}
 	return &review, nil
 }
+
+func (m *ReviewModel) GetForMovie(ctx context.Context, movieID int64) ([]models.Review, error) {
+	rows, _ := m.DB.Query(ctx, "SELECT * FROM reviews WHERE movie_id = $1", movieID)
+	reviews, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.Review])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, storage.ErrNotFound
+		}
+		return nil, err
+	}
+	return reviews, nil
+}

@@ -16,6 +16,8 @@ type Movie struct {
 	Reviews   []Review            `json:"reviews" db:"-"`           // List of reviews
 }
 
+var AnonymousUser = &User{}
+
 type User struct {
 	ID           int64     `json:"id"`
 	Username     string    `json:"username"`
@@ -25,6 +27,10 @@ type User struct {
 	IsActive     bool      `json:"is_active"`
 	CreatedAt    time.Time `json:"-"`
 	UpdatedAt    time.Time `json:"-"`
+}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
 }
 
 type Review struct {

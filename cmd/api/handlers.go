@@ -26,7 +26,7 @@ func (app *Application) healthcheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) getMovie(w http.ResponseWriter, r *http.Request) {
-	id, extracted := app.extractIDParam(w, r)
+	id, extracted := app.Http.extractIDParam(w, r)
 	if !extracted {
 		return
 	}
@@ -117,7 +117,7 @@ func (app *Application) createMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
-	id, extracted := app.extractIDParam(w, r)
+	id, extracted := app.Http.extractIDParam(w, r)
 	if !extracted {
 		return
 	}
@@ -149,7 +149,7 @@ func (app *Application) updateMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) deleteMovie(w http.ResponseWriter, r *http.Request) {
-	id, extracted := app.extractIDParam(w, r)
+	id, extracted := app.Http.extractIDParam(w, r)
 	if !extracted {
 		return
 	}
@@ -271,10 +271,7 @@ func (app *Application) activateAccount(w http.ResponseWriter, r *http.Request) 
 // reviews handlers
 
 func (app *Application) addReviewForMovie(w http.ResponseWriter, r *http.Request) {
-	if !app.isAuthorizedRequest(w, r) {
-		return
-	}
-	movieID, extracted := app.extractIDParam(w, r)
+	movieID, extracted := app.Http.extractIDParam(w, r)
 	if !extracted {
 		return
 	}

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 )
 
+//go:generate mockery --name=MailProvider
 type MailProvider interface {
 	Send(recipient string, tmplName string, tmplData any) error
 }
@@ -22,6 +23,7 @@ type GetUserParams struct {
 	IsActive bool
 }
 
+//go:generate mockery --name=SsoProvider
 type SsoProvider interface {
 	Register(ctx context.Context, email, username, password string) (*SignupData, error)
 	Login(ctx context.Context, email, password string) (*TokensDTO, error)
@@ -31,6 +33,7 @@ type SsoProvider interface {
 	VerifyToken(ctx context.Context, token string) (bool, error)
 }
 
+//go:generate mockery --name=TaskExecutor
 type TaskExecutor interface {
 	Add(task func())
 }

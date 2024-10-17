@@ -128,7 +128,7 @@ func (app *Application) Authenticate(next http.Handler) http.Handler {
 				userID, exists := claims["uid"].(float64)
 				if exists {
 					app.log.Debug("Has user id", "user_id", userID)
-					user, err = app.Services.Auth.GetUser(r.Context(), auth.GetUserParams{ID: int64(userID), IsActive: true})
+					user, err = app.Services.Auth.GetUser(r.Context(), auth.GetUserParams{ID: int64(userID)})
 					if err != nil {
 						switch {
 						case errors.Is(err, auth.ErrUserNotFound):
@@ -148,18 +148,26 @@ func (app *Application) Authenticate(next http.Handler) http.Handler {
 	})
 }
 
-
 // Depends on Authenticate middleware
-func (app *Application) AuthenticationRequired(next http.Handler) http.Handler {
+func (app *Application) requireAuthenticatedUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, ok := r.Context().Value(CtxKeyUser).(*models.User)
-		if !ok {
-			panic("middlewares.AuthenticationRequired: No user in request context, maybe you forgot to use middlewares.Authenticate middleware before?")
-		}
-		if user == nil {
-			app.Http.Unauthorized(w, r, "unauthorized")
+		user := app.Http.ContextGetUser(r)
+		if user.IsAnonymous() {
+			app.Http.Unauthorized(w, r, "you must be authenticated to access this resource")
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (app *Application) requireActivatedUser(next http.Handler) http.Handler {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.Http.ContextGetUser(r)
+		if !user.IsActive {
+			app.Http.Unauthorized(w, r, "you must activate your account to access this resource")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+	return app.requireAuthenticatedUser(fn)
 }

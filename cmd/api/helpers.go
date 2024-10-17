@@ -4,39 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/lib/validator"
 	"io"
 	"net/http"
-	"net/url"
 	"reflect"
-	"strconv"
-	"strings"
-
-	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc/status"
 )
-
-func (app *Application) extractIDParam(w http.ResponseWriter, r *http.Request) (id int, extracted bool) {
-	id, err := strconv.Atoi(chi.URLParam(r, "id"))
-	if err != nil {
-		app.Http.BadRequest(w, r, "invalid movie ID")
-		return 0, false
-	}
-	if id < 1 {
-		app.Http.BadRequest(w, r, "id must be greater than zero")
-		return 0, false
-	}
-	return id, true
-}
-
-func (app *Application) isAuthorizedRequest(w http.ResponseWriter, r *http.Request) bool {
-	if r.Context().Value(CtxKeyUser).(*models.User) == nil {
-		app.Http.Unauthorized(w, r, "unauthorized")
-		return false
-	}
-	return true
-}
 
 func (app *Application) readReqBodyAndValidate(w http.ResponseWriter, r *http.Request, dst any) (success bool) {
 	dstV := reflect.ValueOf(dst)
@@ -108,32 +81,4 @@ func parseJsonErr(err error) error {
 	default:
 		return err
 	}
-}
-
-func (app *Application) readString(qs url.Values, key string, defaultValue string) string {
-	val := qs.Get(key)
-	if val == "" {
-		return defaultValue
-	}
-	return val
-}
-
-func (app *Application) readArr(qs url.Values, key string, defaultValue []string) []string {
-	csv := qs.Get(key)
-	if csv == "" {
-		return defaultValue
-	}
-	return strings.Split(csv, ",")
-}
-
-func (app *Application) readInt(qs url.Values, key string, defaultValue int) int {
-	s := qs.Get(key)
-	if s == "" {
-		return defaultValue
-	}
-	i, err := strconv.Atoi(s)
-	if err != nil {
-		return defaultValue
-	}
-	return i
 }

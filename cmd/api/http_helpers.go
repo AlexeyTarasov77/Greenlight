@@ -2,10 +2,13 @@ package main
 
 import (
 	"greenlight/proj/internal/config"
+	"greenlight/proj/internal/domain/models"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
@@ -107,4 +110,25 @@ func (h *Http) ServerError(w http.ResponseWriter, r *http.Request, err error, ms
 		return
 	}
 	render.JSON(w, r, Response{Success: false, Message: msg})
+}
+
+func (h *Http) ContextGetUser(r *http.Request) *models.User {
+	user, ok := r.Context().Value(CtxKeyUser).(*models.User)
+	if !ok {
+		panic("Invalid user in request context")
+	}
+	return user
+}
+
+func (h *Http) extractIDParam(w http.ResponseWriter, r *http.Request) (id int, extracted bool) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		h.BadRequest(w, r, "invalid movie ID")
+		return 0, false
+	}
+	if id < 1 {
+		h.BadRequest(w, r, "id must be greater than zero")
+		return 0, false
+	}
+	return id, true
 }

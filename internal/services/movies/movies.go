@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+//go:generate mockery --name=MoviesStorage --output=../../storage/postgres/models/mocks
 type MoviesStorage interface {
 	Get(ctx context.Context, id int) (*models.Movie, error)
 	Insert(ctx context.Context, title string, year int32, runtime fields.MovieRuntime, genres []string) (*models.Movie, error)
@@ -20,6 +21,7 @@ type MoviesStorage interface {
 	Delete(ctx context.Context, id int) error
 }
 
+//go:generate mockery --name=ReviewsStorage --output=../../storage/postgres/models/mocks
 type ReviewsStorage interface {
 	GetForMovie(ctx context.Context, movieID int64) ([]models.Review, error)
 }

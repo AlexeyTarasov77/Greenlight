@@ -89,7 +89,7 @@ func (c *Client) Register(ctx context.Context, email, username, password string)
 	log := c.log.With("op", op)
 	resp, err := c.api.Register(
 		ctx,
-		&ssov1.RegisterRequest{Email: email, Password: password, Username: username},
+		&ssov1.RegisterRequest{Email: email, Password: password, Username: username, AppId: c.appId},
 	)
 	if err != nil {
 		log.Error("Error", "errMsg", err.Error())
@@ -192,6 +192,28 @@ func (c *Client) VerifyToken(ctx context.Context, token string) (bool, error) {
 		return false, err
 	}
 	return resp.GetIsValid(), nil
+}
+
+func (c *Client) CreatePermission(ctx context.Context, code string) error {
+	const op = "grpc.Client.CreatePermission"
+	log := c.log.With("op", op)
+	_, err := c.api.CreatePermission(ctx, &ssov1.CreatePermissionRequest{Code: code})
+	if err != nil {
+		log.Error("Error", "errMsg", err.Error())
+		return err
+	}
+	return nil
+}
+
+func (c *Client) CheckPermission(ctx context.Context, permissionCode string, userID int64) (bool, error) {
+	const op = "grpc.Client.CheckPermission"
+	log := c.log.With("op", op)
+	resp, err := c.api.CheckPermission(ctx, &ssov1.CheckPermissionRequest{UserId: userID, PermissionCode: permissionCode})
+	if err != nil {
+		log.Error("Error", "errMsg", err.Error())
+		return false, err
+	}
+	return resp.GetHasPermission(), nil
 }
 
 // Adapter for grpclogging.Logger used to adapt it to slog.Logger

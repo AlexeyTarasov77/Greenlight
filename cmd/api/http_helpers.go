@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"greenlight/proj/internal/config"
 	"greenlight/proj/internal/domain/models"
 	"log/slog"
@@ -75,6 +76,10 @@ func (h *Http) Unauthorized(w http.ResponseWriter, r *http.Request, msg string) 
 	h.Response(w, r, nil, msg, http.StatusUnauthorized)
 }
 
+func (h *Http) Forbidden(w http.ResponseWriter, r *http.Request, msg string) {
+	h.Response(w, r, nil, msg, http.StatusForbidden)
+}
+
 func (h *Http) InvalidAuthToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", "Bearer")
 	h.Unauthorized(w, r, "Invalid or expired authentication token in authorization header")
@@ -115,7 +120,7 @@ func (h *Http) ServerError(w http.ResponseWriter, r *http.Request, err error, ms
 func (h *Http) ContextGetUser(r *http.Request) *models.User {
 	user, ok := r.Context().Value(CtxKeyUser).(*models.User)
 	if !ok {
-		panic("Invalid user in request context")
+		panic(errors.New("invalid user in request context"))
 	}
 	return user
 }

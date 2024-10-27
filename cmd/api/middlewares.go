@@ -91,7 +91,7 @@ func (app *Application) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Vary", "Authorization")
 
-		var user *models.User
+		var user *models.User = models.AnonymousUser
 
 		authHeader := r.Header.Get("Authorization")
 		if authHeader != "" {
@@ -128,7 +128,7 @@ func (app *Application) Authenticate(next http.Handler) http.Handler {
 				userID, exists := claims["uid"].(float64)
 				if exists {
 					app.log.Debug("Has user id", "user_id", userID)
-					user, err = app.Services.Auth.GetUser(r.Context(), auth.GetUserParams{ID: int64(userID)})
+					user, err = app.Services.Auth.GetUser(r.Context(), auth.GetUserParams{ID: int64(userID), IsActive: true})
 					if err != nil {
 						switch {
 						case errors.Is(err, auth.ErrUserNotFound):
@@ -151,23 +151,52 @@ func (app *Application) Authenticate(next http.Handler) http.Handler {
 // Depends on Authenticate middleware
 func (app *Application) requireAuthenticatedUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		app.log.Debug("Checking authentication")
 		user := app.Http.ContextGetUser(r)
+		app.log.Debug("Got user from context", "user", user)
 		if user.IsAnonymous() {
 			app.Http.Unauthorized(w, r, "you must be authenticated to access this resource")
 			return
 		}
+		app.log.Debug("User is authenticated")
 		next.ServeHTTP(w, r)
 	})
 }
 
 func (app *Application) requireActivatedUser(next http.Handler) http.Handler {
 	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		app.log.Debug("Checking activated user")
 		user := app.Http.ContextGetUser(r)
+		app.log.Debug("Got user from context", "user", user)
 		if !user.IsActive {
 			app.Http.Unauthorized(w, r, "you must activate your account to access this resource")
 			return
 		}
+		app.log.Debug("User is activated")
 		next.ServeHTTP(w, r)
 	})
 	return app.requireAuthenticatedUser(fn)
+}
+
+func (app *Application) requirePermission(permissionCode string) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			app.log.Debug("Checking permission", "permissionCode", permissionCode)
+			user := app.Http.ContextGetUser(r)
+			app.log.Debug("Got user from context", "user", user)
+			hasPermission, err := app.Services.Auth.CheckPermission(r.Context(), permissionCode, user.ID)
+			if err != nil {
+				app.Http.ServerError(w, r, err, "")
+				return
+			}
+			app.log.Debug("Has permission", "hasPermission", hasPermission)
+			if !hasPermission {
+				app.Http.Forbidden(w, r, "you don't have permission to access this resource")
+				return
+			}
+			app.log.Debug("Calling next handler")
+			next.ServeHTTP(w, r)
+		})
+		return app.requireActivatedUser(fn)
+	}
 }

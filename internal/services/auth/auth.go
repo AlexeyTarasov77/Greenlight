@@ -31,6 +31,7 @@ type SsoProvider interface {
 	ActivateUser(ctx context.Context, plainToken string) (*models.User, error)
 	NewActivationToken(ctx context.Context, email string) (string, error)
 	VerifyToken(ctx context.Context, token string) (bool, error)
+	CheckPermission(ctx context.Context, permissionCode string, userID int64) (bool, error)
 }
 
 //go:generate mockery --name=TaskExecutor
@@ -151,4 +152,8 @@ func (a *AuthService) VerifyToken(ctx context.Context, token string) (bool, erro
 
 func (a *AuthService) GetUser(ctx context.Context, params GetUserParams) (*models.User, error) {
 	return a.sso.GetUser(ctx, params)
+}
+
+func (a *AuthService) CheckPermission(ctx context.Context, permissionCode string, userID int64) (bool, error) {
+	return a.sso.CheckPermission(ctx, permissionCode, userID)
 }

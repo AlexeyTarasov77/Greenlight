@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const activationURL = "PUT '/api/v1/accounts/activation/'"
+const activationURL = "PUT '/api/v1/accounts/activation'"
 
 func (app *Application) routes() http.Handler {
 	router := chi.NewRouter()
@@ -22,13 +22,18 @@ func (app *Application) routes() http.Handler {
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Get("/healthcheck", app.healthcheck)
 		r.Route("/movies", func(r chi.Router) {
-			r.Use(app.requireActivatedUser)
-			r.Get("/{id}", app.getMovie)
-			r.Patch("/{id}", app.updateMovie)
-			r.Delete("/{id}", app.deleteMovie)
-			r.Get("/", app.getMovies)
-			r.Post("/", app.createMovie)
-			r.Post("/{id}/review", app.addReviewForMovie)
+			r.Group(func(r chi.Router) {
+				r.Use(app.requirePermission("movies:read"))
+				r.Get("/{id}", app.getMovie)
+				r.Get("/", app.getMovies)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(app.requirePermission("movies:write"))
+				r.Patch("/{id}", app.updateMovie)
+				r.Delete("/{id}", app.deleteMovie)
+				r.Post("/", app.createMovie)
+				r.Post("/{id}/review", app.addReviewForMovie)
+			})
 		})
 		r.Route("/accounts", func(r chi.Router) {
 			r.Post("/activation/new-token", app.getNewActivationToken)

@@ -26,6 +26,7 @@ func (app *Application) healthcheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Application) getMovie(w http.ResponseWriter, r *http.Request) {
+	app.log.Debug("Get movie")
 	id, extracted := app.Http.extractIDParam(w, r)
 	if !extracted {
 		return
@@ -60,7 +61,7 @@ func (app *Application) getMovies(w http.ResponseWriter, r *http.Request) {
 		app.Http.BadRequest(w, r, "Invalid query params provided. Ensure that all query params are valid")
 		return
 	}
-	if validationErrs := validator.ValidateStruct(app.validator, params); len(validationErrs) > 0 {
+	if validationErrs := validator.ValidateStruct(app.validator, &params); len(validationErrs) > 0 {
 		app.Http.UnprocessableEntity(w, r, validationErrs)
 		return
 	}
@@ -246,7 +247,7 @@ func (app *Application) getNewActivationToken(w http.ResponseWriter, r *http.Req
 
 func (app *Application) activateAccount(w http.ResponseWriter, r *http.Request) {
 	type request struct {
-		ActivationToken string `json:"activation_token" validate:"required,min=26"`
+		ActivationToken string `json:"token" validate:"required,min=26"`
 	}
 	var req request
 	if !app.readReqBodyAndValidate(w, r, &req) {

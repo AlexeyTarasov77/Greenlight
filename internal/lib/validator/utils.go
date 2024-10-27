@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/utils"
@@ -42,7 +43,7 @@ func ProcessValidationErrors(obj any, errs govalidator.ValidationErrors) map[str
 func ValidateStruct(validator *govalidator.Validate, obj any) (validationErrs map[string]string) {
 	objV := reflect.ValueOf(obj)
 	if objV.Kind() != reflect.Ptr || objV.Elem().Kind() != reflect.Struct {
-		panic("validator.utils.ValidateStruct: obj must be a pointer to a struct")
+		panic(errors.New("validator.utils.ValidateStruct: obj must be a pointer to a struct"))
 	}
 	if err := validator.Struct(obj); err != nil {
 		validationErrs = ProcessValidationErrors(obj, err.(govalidator.ValidationErrors))

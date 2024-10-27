@@ -1,6 +1,6 @@
 debug: true
 app_secret: d914b337e3c6f088610690c66d3128cfe2dea520018efe4a49b31e6ac552f3b5
-app_id: 2
+app_id: 1
 server:
   host: localhost
   port: 8000

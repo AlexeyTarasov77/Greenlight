@@ -57,9 +57,18 @@ type Server struct {
 }
 
 type DB struct {
-	Dsn string `yaml:"dsn" env-required:"true" env:"DB_DSN"`
+	Driver string `yaml:"driver" env-default:"postgres"`
+	User   string `yaml:"user" env-required:"true" env:"DB_USER"`
+	Password string `yaml:"password" env-required:"true" env:"DB_PASSWORD"`
+	Host   string `yaml:"host" env-required:"true"`
+	Port   string `yaml:"port" env-required:"true"`
+	Name   string `yaml:"name" env-required:"true"`
 	MaxConns int `yaml:"max_conns" env-default:"25"`
 	MaxConnIdleTime time.Duration `yaml:"max_conn_idle_time" env-default:"10m"`
+}
+
+func (db *DB) GetDsn() string {
+	return fmt.Sprintf("%s://%s:%s@%s:%s/%s?sslmode=disable", db.Driver, db.User, db.Password, db.Host, db.Port, db.Name)
 }
 
 func MustLoad(configPath string) *Config {

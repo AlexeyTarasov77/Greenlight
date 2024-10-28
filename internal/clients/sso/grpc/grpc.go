@@ -44,7 +44,7 @@ func New(
 	logOpts := []grpclogging.Option{
 		grpclogging.WithLogOnEvents(grpclogging.PayloadReceived, grpclogging.PayloadSent),
 	}
-	cc, err := grpc.NewClient(
+	conn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
@@ -56,7 +56,7 @@ func New(
 		return nil, err
 	}
 	return &Client{
-		api:   ssov1.NewAuthClient(cc),
+		api:   ssov1.NewAuthClient(conn),
 		log:   log,
 		appId: appId,
 	}, nil

@@ -20,12 +20,12 @@ func main() {
 	log := logger.SetupLogger(cfg.Debug)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	storage, err := postgres.New(ctx, cfg.DB.Dsn, cfg.DB.MaxConns, cfg.DB.MaxConnIdleTime)
+	storage, err := postgres.New(ctx, cfg.DB.GetDsn(), cfg.DB.MaxConns, cfg.DB.MaxConnIdleTime)
 	if err != nil {
 		panic(err)
 	}
 	defer storage.Conn.Close()
-	log.Info("database connection established", "dsn", cfg.DB.Dsn)
+	log.Info("database connection established", "dsn", cfg.DB.GetDsn())
 	app := NewApplication(cfg, log, storage)
 	if err := app.serve(); err != nil {
 		app.log.Error("Error serving server", "reason", err.Error())

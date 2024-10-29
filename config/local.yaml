@@ -2,8 +2,8 @@ debug: true
 app_secret: d914b337e3c6f088610690c66d3128cfe2dea520018efe4a49b31e6ac552f3b5
 app_id: 1
 server:
-  host: localhost
-  port: 8000
+  host: 0.0.0.0
+  port: 8080
   read_timeout: 5s
   write_timeout: 5s
   idle_timeout: 120s
@@ -26,6 +26,6 @@ limit:
   enabled: true
 clients:
   sso:
-    addr: "localhost:8080"
+    addr: "sso:3000"
     retry_timeout: 2s
     retries_count: 3

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"greenlight/proj/internal/config"
 	"greenlight/proj/internal/lib/logger"
 	"greenlight/proj/internal/storage/postgres"
@@ -18,11 +19,11 @@ func main() {
 	flag.Parse()
 	cfg := config.MustLoad(*cfgPath)
 	log := logger.SetupLogger(cfg.Debug)
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	storage, err := postgres.New(ctx, cfg.DB.GetDsn(), cfg.DB.MaxConns, cfg.DB.MaxConnIdleTime)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to connect to database: %w", err))
 	}
 	defer storage.Conn.Close()
 	log.Info("database connection established", "dsn", cfg.DB.GetDsn())

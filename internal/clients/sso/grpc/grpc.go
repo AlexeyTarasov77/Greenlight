@@ -6,10 +6,12 @@ import (
 	"greenlight/proj/internal/services/auth"
 	"log/slog"
 	"time"
+	"fmt"
 
 	ssov1 "github.com/AlexeySHA256/protos/gen/go/sso"
 	grpclogging "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -20,6 +22,22 @@ type Client struct {
 	api   ssov1.AuthClient
 	log   *slog.Logger
 	appId int32
+}
+
+func checkServiceHealth(conn *grpc.ClientConn, serviceName string) error {
+    client := healthpb.NewHealthClient(conn)
+    ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+    defer cancel()
+
+    response, err := client.Check(ctx, &healthpb.HealthCheckRequest{Service: serviceName})
+    if err != nil {
+        return err
+    }
+
+    if response.GetStatus() != healthpb.HealthCheckResponse_SERVING {
+        return fmt.Errorf("service %s is not in SERVING state: %v", serviceName, response.GetStatus())
+    }
+    return nil
 }
 
 /*
@@ -53,6 +71,10 @@ func New(
 		),
 	)
 	if err != nil {
+		return nil, err
+	}
+	if err = checkServiceHealth(conn, ""); err != nil {
+		log.Error("Failed to check service health", "errMsg", err.Error())
 		return nil, err
 	}
 	return &Client{

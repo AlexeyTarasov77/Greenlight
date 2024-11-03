@@ -32,6 +32,7 @@ type SsoProvider interface {
 	NewActivationToken(ctx context.Context, email string) (string, error)
 	VerifyToken(ctx context.Context, token string) (bool, error)
 	CheckPermission(ctx context.Context, permissionCode string, userID int64) (bool, error)
+	GrantPermissions(ctx context.Context, userID int64, permissions []string) error
 }
 
 //go:generate mockery --name=TaskExecutor
@@ -94,6 +95,11 @@ func (a *AuthService) Signup(ctx context.Context, email, username, password, act
 	data, err := a.sso.Register(ctx, email, username, password)
 	if err != nil {
 		log.Error("Error calling Sso.Register", "errMsg", err.Error())
+		return 0, err
+	}
+	err = a.sso.GrantPermissions(ctx, data.UserID, []string{"movies:read"})
+	if err != nil {
+		log.Error("Error calling Sso.GrantPermissions", "errMsg", err.Error())
 		return 0, err
 	}
 	a.taskExecutor.Add(func() {

@@ -104,6 +104,24 @@ func (_m *SsoProvider) GetUser(ctx context.Context, params auth.GetUserParams) (
 	return r0, r1
 }
 
+// GrantPermissions provides a mock function with given fields: ctx, userID, permissions
+func (_m *SsoProvider) GrantPermissions(ctx context.Context, userID int64, permissions []string) error {
+	ret := _m.Called(ctx, userID, permissions)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GrantPermissions")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, []string) error); ok {
+		r0 = rf(ctx, userID, permissions)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Login provides a mock function with given fields: ctx, email, password
 func (_m *SsoProvider) Login(ctx context.Context, email string, password string) (*auth.TokensDTO, error) {
 	ret := _m.Called(ctx, email, password)

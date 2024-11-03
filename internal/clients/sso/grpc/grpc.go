@@ -238,6 +238,17 @@ func (c *Client) CheckPermission(ctx context.Context, permissionCode string, use
 	return resp.GetHasPermission(), nil
 }
 
+func (c *Client) GrantPermissions(ctx context.Context, userID int64, permissions []string) error {
+	const op = "grpc.Client.GrantPermissions"
+	log := c.log.With("op", op)
+	_, err := c.api.GrantPermissions(ctx, &ssov1.GrantPermissionsRequest{UserId: userID, PermissionCodes: permissions})
+	if err != nil {
+		log.Error("Error", "errMsg", err.Error())
+		return err
+	}
+	return nil
+}
+
 // Adapter for grpclogging.Logger used to adapt it to slog.Logger
 func InterceptorLogger(log *slog.Logger) grpclogging.Logger {
 	return grpclogging.LoggerFunc(

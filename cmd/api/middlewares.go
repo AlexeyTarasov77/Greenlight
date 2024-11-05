@@ -87,6 +87,37 @@ func (app *Application) RateLimiter(next http.Handler) http.Handler {
 	})
 }
 
+func (app *Application) enableCORS(allowedOrigins []string) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Vary", "Origin") // marks, that response depends on Origin header
+			w.Header().Set("Vary", "Access-Control-Request-Method")
+			origin := r.Header.Get("Origin")
+			if origin != "" {
+				// Comparing origin from req with allowed origins, because it's impossible to set multiple origins
+				// in Access-Control-Allow-Origin header. So when matched origin is found, duplicating it into header
+				for _, allowedOrigin := range allowedOrigins {
+					if allowedOrigin == "*" || allowedOrigin == origin {
+						w.Header().Set("Access-Control-Allow-Origin", origin)
+						if (r.Method == http.MethodOptions) && r.Header.Get("Access-Control-Request-Method") != "" {
+							// Identified as a preflight request
+							w.Header().Set("Access-Control-Allow-Methods", "PUT, PATCH, DELETE, OPTIONS")
+							w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+							w.WriteHeader(http.StatusOK)
+							return
+						}
+						if allowedOrigin == "*" {
+							app.log.Warn("Be carefull, your service can be vulnerable to a distributed brute-force attack, if using '*' as allowed origin in conjuction with allowing Authorization header in cors requests")
+						}
+						break
+					}
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func (app *Application) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Vary", "Authorization")

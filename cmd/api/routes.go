@@ -17,6 +17,10 @@ func (app *Application) routes() http.Handler {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
 	router.Use(app.Recoverer)
+	allowedOrigins := app.cfg.CORS.AllowedOrigins
+	if len(allowedOrigins) > 0 {
+		router.Use(app.enableCORS(allowedOrigins))
+	}
 	router.Use(app.RateLimiter)
 	router.Use(app.Authenticate)
 	router.Route("/api/v1", func(r chi.Router) {

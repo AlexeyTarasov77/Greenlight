@@ -10,6 +10,66 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCors(t *testing.T) {
+	const testOrigin = "http://testorigin.com"
+	app := NewTestApplication(nil, t)
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	testCases := []struct {
+		name         string
+        allowedOrigins []string
+        originHeader  string
+        expectedAllowedOrigin string
+	} {
+		{
+			name:         "no origin header",
+			allowedOrigins: []string{testOrigin},
+			originHeader:  "",
+			expectedAllowedOrigin: "",
+		},
+		{
+			name:         "single allowed origin",
+            allowedOrigins: []string{testOrigin},
+            originHeader:  testOrigin,
+            expectedAllowedOrigin: testOrigin,
+		},
+		{
+			name:         "multiple allowed origins",
+			allowedOrigins: []string{"http://localhost:3000", testOrigin, "http://localhost:4000"},
+            originHeader:  testOrigin,
+            expectedAllowedOrigin: testOrigin,
+		},
+		{
+			name:         "not allowed origin",
+			allowedOrigins: []string{testOrigin},
+			originHeader:  "http://unknown-origin.com",
+			expectedAllowedOrigin: "",
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			request.Header.Set("Origin", testCase.originHeader)
+			recorder := httptest.NewRecorder()
+			app.enableCORS(testCase.allowedOrigins)(next).ServeHTTP(recorder, request)
+			assert.Equal(t, testCase.expectedAllowedOrigin, recorder.Header().Get("Access-Control-Allow-Origin"))
+		})
+	}
+	t.Run("preflight request", func (t *testing.T) {
+		recorder := httptest.NewRecorder()
+        request := httptest.NewRequest(http.MethodOptions, "/", nil)
+        request.Header.Set("Origin", testOrigin)
+        request.Header.Set("Access-Control-Request-Method", "GET")
+        next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            w.WriteHeader(http.StatusOK)
+        })
+        app.enableCORS([]string{testOrigin})(next).ServeHTTP(recorder, request)
+        assert.NotEmpty(t, recorder.Header().Get("Access-Control-Allow-Methods"))
+        assert.NotEmpty(t, recorder.Header().Get("Access-Control-Allow-Headers"))
+		assert.Equal(t, recorder.Code, http.StatusOK)
+	})
+}
 
 func TestRequiredAuthenticatedUser(t *testing.T) {
 	app := NewTestApplication(nil, t)

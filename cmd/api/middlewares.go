@@ -3,14 +3,17 @@ package main
 import (
 	"context"
 	"errors"
+	"expvar"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/services/auth"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/time/rate"
 )
@@ -230,4 +233,22 @@ func (app *Application) requirePermission(permissionCode string) func(next http.
 		})
 		return app.requireActivatedUser(fn)
 	}
+}
+
+func (app *Application) metrics(next http.Handler) http.Handler {
+	totalRequestsReceived := expvar.NewInt("total_requests_received")
+	totalResponsesSent := expvar.NewInt("total_responses_sent")
+	totalResponsesSentByStatus := expvar.NewMap("total_responses_sent_by_status")
+	totalProcessingTimeμs := expvar.NewInt("total_processing_time_μs")
+	avgProcessingTimeμs := expvar.NewInt("avg_processing_time_μs")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		totalRequestsReceived.Add(1)
+		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		next.ServeHTTP(ww, r)
+		totalResponsesSent.Add(1)
+		totalProcessingTimeμs.Add(int64(time.Since(start).Microseconds()))
+		avgProcessingTimeμs.Set(totalProcessingTimeμs.Value() / totalResponsesSent.Value())
+		totalResponsesSentByStatus.Add(strconv.Itoa(ww.Status()), 1)
+	})
 }

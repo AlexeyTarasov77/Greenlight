@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"net/http"
 
 	"github.com/go-chi/chi/middleware"
@@ -14,6 +15,8 @@ func (app *Application) routes() http.Handler {
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		app.Http.NotFound(w, r, "Page not found")
 	})
+
+	router.Use(app.metrics)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
 	router.Use(app.Recoverer)
@@ -23,6 +26,7 @@ func (app *Application) routes() http.Handler {
 	}
 	router.Use(app.RateLimiter)
 	router.Use(app.Authenticate)
+    router.Get("/debug/vars", expvar.Handler().(http.HandlerFunc))
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Get("/healthcheck", app.healthcheck)
 		r.Route("/movies", func(r chi.Router) {

@@ -57,8 +57,8 @@ func NewTestApplication(cfg *config.Config, t *testing.T) *Application {
 			log: log,
 			cfg: cfg,
 		},
-		Services:        services,
-		Decoder:         decoder,
+		Services: services,
+		Decoder:  decoder,
 		// BackgroundTasks: bgTasks,
 	}
 	return app

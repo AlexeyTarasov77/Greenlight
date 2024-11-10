@@ -7,8 +7,6 @@ import (
 	"os"
 )
 
-
-
 func SetupLogger(debug bool) *slog.Logger {
 	var handler slog.Handler
 	if debug {
@@ -22,6 +20,7 @@ func SetupLogger(debug bool) *slog.Logger {
 type out struct {
 	stdLog *slog.Logger
 }
+
 func (l out) Write(p []byte) (n int, err error) {
 	l.stdLog.Info(string(p))
 	return len(p), nil

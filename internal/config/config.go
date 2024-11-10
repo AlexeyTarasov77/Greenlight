@@ -11,7 +11,7 @@ import (
 
 type Config struct {
 	Debug      bool          `yaml:"debug"`
-	Limiter    limiter       `yaml:"limiter"`
+	Limiter    Limiter       `yaml:"limiter"`
 	AppID      int32         `yaml:"app_id"`
 	AppSecret  string        `yaml:"app_secret"`
 	Server     server        `yaml:"server"`
@@ -32,7 +32,7 @@ type smtp struct {
 	RetriesCount int           `yaml:"retries_count" env-default:"1"`
 }
 
-type limiter struct {
+type Limiter struct {
 	Enabled bool    `yaml:"enabled"`
 	Rps     float64 `yaml:"rps" env-default:"20"`
 	Burst   int     `yaml:"burst" env-default:"5"`

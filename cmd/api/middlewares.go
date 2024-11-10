@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"expvar"
+	"fmt"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/services/auth"
 	"net"
@@ -36,7 +37,7 @@ func (app *Application) Recoverer(next http.Handler) http.Handler {
 	})
 }
 
-func (app *Application) RateLimiter(next http.Handler) http.Handler {
+func (app *Application) rateLimiter(next http.Handler) http.Handler {
 	const op = "middlewares.RateLimiter"
 	log := app.log.With("op", op)
 	type client struct {
@@ -46,9 +47,13 @@ func (app *Application) RateLimiter(next http.Handler) http.Handler {
 	clients := make(map[string]*client)
 	var mu sync.Mutex
 	go func() {
+		log.Debug("Starting rate limiter cleanup goroutine")
 		for {
 			mu.Lock()
 			for ip, client := range clients {
+				if client == nil {
+					continue
+				}
 				if time.Since(client.lastSeen) > 5*time.Minute {
 					delete(clients, ip)
 				}
@@ -72,9 +77,11 @@ func (app *Application) RateLimiter(next http.Handler) http.Handler {
 				mu.Lock()
 				clients[ip] = newClient
 				mu.Unlock()
+				log.Debug("new client", "ip", ip)
 			}
 			limiter := clients[ip].limiter
 			log.Debug("rate limiting", "ip", ip, "Available requests", limiter.Tokens())
+			fmt.Println("rate limiting", "ip", ip, "Available requests", limiter.Tokens())
 			if !limiter.Allow() {
 				log.Warn("rate limit exceeded", "ip", ip)
 				app.Http.Response(

@@ -27,15 +27,15 @@ type ReviewsStorage interface {
 }
 
 type MovieService struct {
-	log     *slog.Logger
-	moviesStorage MoviesStorage
+	log            *slog.Logger
+	moviesStorage  MoviesStorage
 	reviewsStorage ReviewsStorage
 }
 
 func New(log *slog.Logger, moviesStorage MoviesStorage, reviewsStorage ReviewsStorage) *MovieService {
 	return &MovieService{
-		log:     log,
-		moviesStorage: moviesStorage,
+		log:            log,
+		moviesStorage:  moviesStorage,
 		reviewsStorage: reviewsStorage,
 	}
 }
@@ -96,9 +96,9 @@ func (s *MovieService) List(title string, genres []string, page int, pageSize in
 		movieFields = append(movieFields, reflect.TypeOf(models.Movie{}).Field(i).Name)
 	}
 	filters := filters.Filters{
-		Page: page,
-		PageSize: pageSize,
-		Sort: sort,
+		Page:         page,
+		PageSize:     pageSize,
+		Sort:         sort,
 		SortSafelist: movieFields,
 	}
 	movies, totalRecords, err := s.moviesStorage.List(ctx, title, genres, filters)

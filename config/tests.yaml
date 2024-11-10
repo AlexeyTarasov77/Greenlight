@@ -1,0 +1,4 @@
+limiter:
+  enabled: true
+  rps: 10
+  burst: 5

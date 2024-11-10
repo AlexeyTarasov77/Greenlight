@@ -9,10 +9,10 @@ import (
 type Task = func()
 
 type BackgroudTasks struct {
-	log *slog.Logger
-	tasks chan Task
+	log        *slog.Logger
+	tasks      chan Task
 	maxWorkers int
-	wg *sync.WaitGroup
+	wg         *sync.WaitGroup
 }
 
 func (t *BackgroudTasks) Run() {
@@ -58,10 +58,10 @@ func New(log *slog.Logger, maxWorkers int, maxTasksQueueSize int) *BackgroudTask
 	wg.Add(maxWorkers)
 	tasks := make(chan Task, maxTasksQueueSize)
 	return &BackgroudTasks{
-		log: log,
+		log:        log,
 		maxWorkers: maxWorkers,
-		wg: wg,
-		tasks: tasks,
+		wg:         wg,
+		tasks:      tasks,
 	}
 }
 

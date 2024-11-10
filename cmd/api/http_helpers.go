@@ -22,9 +22,9 @@ type Http struct {
 type envelop map[string]any
 
 type Response struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Data    envelop   `json:"data,omitempty"`
+	Success bool    `json:"success"`
+	Message string  `json:"message,omitempty"`
+	Data    envelop `json:"data,omitempty"`
 }
 
 func processMsg(status int, msg string) string {

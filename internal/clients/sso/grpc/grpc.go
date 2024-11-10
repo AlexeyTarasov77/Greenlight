@@ -2,19 +2,19 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/services/auth"
 	"log/slog"
 	"time"
-	"fmt"
 
 	ssov1 "github.com/AlexeySHA256/protos/gen/go/sso"
 	grpclogging "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 )
 
@@ -25,19 +25,19 @@ type Client struct {
 }
 
 func checkServiceHealth(conn *grpc.ClientConn, serviceName string) error {
-    client := healthpb.NewHealthClient(conn)
-    ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-    defer cancel()
+	client := healthpb.NewHealthClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-    response, err := client.Check(ctx, &healthpb.HealthCheckRequest{Service: serviceName})
-    if err != nil {
-        return err
-    }
+	response, err := client.Check(ctx, &healthpb.HealthCheckRequest{Service: serviceName})
+	if err != nil {
+		return err
+	}
 
-    if response.GetStatus() != healthpb.HealthCheckResponse_SERVING {
-        return fmt.Errorf("service %s is not in SERVING state: %v", serviceName, response.GetStatus())
-    }
-    return nil
+	if response.GetStatus() != healthpb.HealthCheckResponse_SERVING {
+		return fmt.Errorf("service %s is not in SERVING state: %v", serviceName, response.GetStatus())
+	}
+	return nil
 }
 
 /*
@@ -184,11 +184,11 @@ func (c *Client) ActivateUser(ctx context.Context, plainToken string) (*models.U
 		return nil, err
 	}
 	return &models.User{
-		ID: user.GetId(),
-		Email: user.GetEmail(),
-		Username: user.GetUsername(),
-		Role: user.GetRole(),
-		IsActive: user.GetIsActive(),
+		ID:        user.GetId(),
+		Email:     user.GetEmail(),
+		Username:  user.GetUsername(),
+		Role:      user.GetRole(),
+		IsActive:  user.GetIsActive(),
 		CreatedAt: createdAt,
 		UpdatedAt: updatedAt,
 	}, nil

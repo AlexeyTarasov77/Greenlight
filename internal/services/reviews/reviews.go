@@ -14,7 +14,7 @@ type ReviewStorage interface {
 }
 
 type ReviewService struct {
-	log *slog.Logger
+	log     *slog.Logger
 	storage ReviewStorage
 }
 

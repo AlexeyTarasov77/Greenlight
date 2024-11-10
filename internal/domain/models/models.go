@@ -13,7 +13,7 @@ type Movie struct {
 	Genres    []string            `json:"genres,omitempty"`  // Movie genres (i.e. Comedy, drama, scifi)
 	Version   uint                `json:"version"`           // The version number starts at 1 and will be incremented each // time the movie information is updated
 	CreatedAt time.Time           `json:"-"`                 // Timestamp for when the movie is added to our database
-	Reviews   []Review            `json:"reviews" db:"-"`           // List of reviews
+	Reviews   []Review            `json:"reviews" db:"-"`    // List of reviews
 }
 
 var AnonymousUser = &User{}

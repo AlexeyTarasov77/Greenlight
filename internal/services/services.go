@@ -48,7 +48,7 @@ func New(log *slog.Logger, cfg *config.Config, storage *postgres.Storage, taskEx
 func NewTestServices(t *testing.T) *Services {
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
 	return &Services{
-		Auth:    auth.New(log, authmocks.NewMailProvider(t), authmocks.NewSsoProvider(t), authmocks.NewTaskExecutor(t)),
-		Movies:  movies.New(log, nil, nil),
+		Auth:   auth.New(log, authmocks.NewMailProvider(t), authmocks.NewSsoProvider(t), authmocks.NewTaskExecutor(t)),
+		Movies: movies.New(log, nil, nil),
 	}
 }

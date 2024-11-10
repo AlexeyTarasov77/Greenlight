@@ -9,7 +9,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-    bgTasks := New(slog.Default(), 3, 10)
+	bgTasks := New(slog.Default(), 3, 10)
 	bgTasks.Run()
 	taskRunned := false
 	task := func() {

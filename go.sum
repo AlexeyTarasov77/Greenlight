@@ -1,5 +1,3 @@
-github.com/AlexeySHA256/protos v0.1.1 h1:var8qin1NcEyVIISKd3WjO1IGxg6ntJbXTeY25AdxZo=
-github.com/AlexeySHA256/protos v0.1.1/go.mod h1:7187SUlaNKuvAz4GMJJtOURDe3Z/QwdUs/VDYVPb44k=
 github.com/AlexeySHA256/protos v0.1.4 h1:LKz2Vo5BOmVB67QMb5Zy3ybNlwLPKemSWQcz3ifuAkY=
 github.com/AlexeySHA256/protos v0.1.4/go.mod h1:7187SUlaNKuvAz4GMJJtOURDe3Z/QwdUs/VDYVPb44k=
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=

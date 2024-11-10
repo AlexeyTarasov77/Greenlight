@@ -41,19 +41,19 @@ func main() {
 	expvar.Publish("database", expvar.Func(func() any {
 		stats := storage.Conn.Stat()
 		return map[string]any{
-			"dsn": cfg.DB.GetDsn(),
-			"AcquireCount": stats.AcquireCount(),
-			"AcquireDuration": stats.AcquireDuration().String(),
-			"IdleConns": stats.IdleConns(),
-			"MaxConns": stats.MaxConns(),
-			"TotalConns": stats.TotalConns(),
-			"ConstructingConns": stats.ConstructingConns(),
-			"AcquiredConns": stats.AcquiredConns(),
+			"dsn":                  cfg.DB.GetDsn(),
+			"AcquireCount":         stats.AcquireCount(),
+			"AcquireDuration":      stats.AcquireDuration().String(),
+			"IdleConns":            stats.IdleConns(),
+			"MaxConns":             stats.MaxConns(),
+			"TotalConns":           stats.TotalConns(),
+			"ConstructingConns":    stats.ConstructingConns(),
+			"AcquiredConns":        stats.AcquiredConns(),
 			"CanceledAcquireCount": stats.CanceledAcquireCount(),
-			"EmptyAcquireCount": stats.EmptyAcquireCount(),
-			"NewConnsCount": stats.NewConnsCount(),
-            "MaxOpenConns": cfg.DB.MaxConns,
-            "MaxIdleConns": cfg.DB.MaxConnIdleTime,
+			"EmptyAcquireCount":    stats.EmptyAcquireCount(),
+			"NewConnsCount":        stats.NewConnsCount(),
+			"MaxOpenConns":         cfg.DB.MaxConns,
+			"MaxIdleConns":         cfg.DB.MaxConnIdleTime,
 		}
 	}))
 

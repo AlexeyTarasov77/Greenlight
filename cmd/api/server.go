@@ -12,15 +12,14 @@ import (
 	"syscall"
 )
 
-
 func (app *Application) serve() error {
 	server := http.Server{
-		Addr:    net.JoinHostPort(app.cfg.Server.Host, app.cfg.Server.Port),
-		Handler: app.routes(),
-		ReadTimeout: app.cfg.Server.ReadTimeout,
+		Addr:         net.JoinHostPort(app.cfg.Server.Host, app.cfg.Server.Port),
+		Handler:      app.routes(),
+		ReadTimeout:  app.cfg.Server.ReadTimeout,
 		WriteTimeout: app.cfg.Server.WriteTimeout,
-		IdleTimeout: app.cfg.Server.IdleTimeout,
-		ErrorLog: logger.LogAdapter(app.log),
+		IdleTimeout:  app.cfg.Server.IdleTimeout,
+		ErrorLog:     logger.LogAdapter(app.log),
 	}
 	shutdownErrs := make(chan error)
 	go func() {
@@ -45,7 +44,7 @@ func (app *Application) serve() error {
 				app.log.Error("graceful shutdown timed out.. forcing exit", "timeout", app.cfg.Server.ShutdownTimeout)
 				return fmt.Errorf("graceful shutdown timed out: %w", err)
 			}
-			return err 
+			return err
 		}
 	}
 	app.log.Info("Server succesfully stopped")

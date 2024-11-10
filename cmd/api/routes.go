@@ -24,9 +24,9 @@ func (app *Application) routes() http.Handler {
 	if len(allowedOrigins) > 0 {
 		router.Use(app.enableCORS(allowedOrigins))
 	}
-	router.Use(app.RateLimiter)
+	router.Use(app.rateLimiter)
 	router.Use(app.Authenticate)
-    router.Get("/debug/vars", expvar.Handler().(http.HandlerFunc))
+	router.Get("/debug/vars", expvar.Handler().(http.HandlerFunc))
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Get("/healthcheck", app.healthcheck)
 		r.Route("/movies", func(r chi.Router) {

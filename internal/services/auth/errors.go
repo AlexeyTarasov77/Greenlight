@@ -16,7 +16,7 @@ func (e *errInvalidData) Error() string {
 }
 
 var (
-	ErrUserNotFound = errors.New("user not found")
-	ErrInvalidData = &errInvalidData{}
+	ErrUserNotFound         = errors.New("user not found")
+	ErrInvalidData          = &errInvalidData{}
 	ErrUserAlreadyActivated = errors.New("user already activated")
 )

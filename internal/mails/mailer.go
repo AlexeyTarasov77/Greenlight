@@ -18,8 +18,8 @@ import (
 var templateFS embed.FS
 
 type Mailer struct {
-	Dialer *mail.Dialer
-	Sender string
+	Dialer       *mail.Dialer
+	Sender       string
 	RetriesCount int
 }
 
@@ -27,8 +27,8 @@ func New(host string, port int, timeout time.Duration, username, password, sende
 	dialer := mail.NewDialer(host, port, sender, password)
 	dialer.Timeout = timeout
 	return &Mailer{
-		Dialer: dialer,
-		Sender: sender,
+		Dialer:       dialer,
+		Sender:       sender,
 		RetriesCount: retriesCount,
 	}
 }
@@ -39,9 +39,9 @@ func parseEmailTmpl(tmplName string, tmplData any) (map[string]string, error) {
 		return nil, err
 	}
 	tmplPartials := map[string]string{
-		"subject": "",
+		"subject":   "",
 		"plainBody": "",
-		"htmlBody": "",
+		"htmlBody":  "",
 	}
 	for key := range tmplPartials {
 		buff := new(bytes.Buffer)
@@ -74,10 +74,9 @@ func (m *Mailer) Send(recipient string, tmplName string, tmplData any) error {
 	return err
 }
 
-
 type ApiMailer struct {
-	ApiToken string
-	Sender string
+	ApiToken     string
+	Sender       string
 	RetriesCount int
 }
 
@@ -89,11 +88,11 @@ func (m *ApiMailer) Send(recipient string, tmplName string, tmplData any) error 
 	}
 	sender := strings.Split(m.Sender, " ")
 	payload, err := json.Marshal(map[string]any{
-		"from": map[string]string{"email": sender[1], "name": sender[0]},
-		"to": []map[string]string{{"email": recipient}},
+		"from":    map[string]string{"email": sender[1], "name": sender[0]},
+		"to":      []map[string]string{{"email": recipient}},
 		"subject": tmplPartials["subject"],
-		"text": tmplPartials["plainBody"],
-		"html": tmplPartials["htmlBody"],
+		"text":    tmplPartials["plainBody"],
+		"html":    tmplPartials["htmlBody"],
 	})
 	if err != nil {
 		return err
@@ -104,7 +103,7 @@ func (m *ApiMailer) Send(recipient string, tmplName string, tmplData any) error 
 	if err != nil {
 		return err
 	}
-	req.Header.Add("Authorization", "Bearer " + m.ApiToken)
+	req.Header.Add("Authorization", "Bearer "+m.ApiToken)
 	req.Header.Set("Content-Type", "application/json")
 	var resp *http.Response
 	for i := 0; i < m.RetriesCount; i++ {

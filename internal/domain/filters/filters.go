@@ -11,9 +11,9 @@ const (
 )
 
 type Filters struct {
-	Page int 
-	PageSize int
-	Sort string
+	Page         int
+	PageSize     int
+	Sort         string
 	SortSafelist []string
 }
 
@@ -38,6 +38,6 @@ func (f *Filters) Limit() int {
 	return f.PageSize
 }
 
-func (f Filters) Offset() int { 
+func (f Filters) Offset() int {
 	return (f.Page - 1) * f.PageSize
 }

@@ -103,9 +103,10 @@ func (m *MovieModel) Update(ctx context.Context, movie *models.Movie) (*models.M
 	updatedMovie, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Movie])
 	if err != nil {
 		var pgxErr *pgconn.PgError
-		if errors.As(err, &pgxErr) && pgxErr.Code == postgres.ErrConflictCode {
+		switch {
+		case errors.As(err, &pgxErr) && pgxErr.Code == postgres.ErrConflictCode:
 			return nil, storage.ErrConflict
-		} else if errors.Is(err, pgx.ErrNoRows) {
+		case errors.Is(err, pgx.ErrNoRows):
 			return nil, storage.ErrNotFound
 		}
 		return nil, err

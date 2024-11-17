@@ -13,7 +13,11 @@ import (
 	"time"
 )
 
-const version = "1.0.0"
+var (
+	buildTime string
+	version   string
+)
+
 
 func main() {
 	expvar.NewString("version").Set(version)
@@ -27,8 +31,13 @@ func main() {
 	}))
 
 	cfgPath := flag.String("config", "config/local.yml", "path to config file")
+	displayVersion := flag.Bool("version", false, "display version and exit")
 
 	flag.Parse()
+	if *displayVersion {
+		fmt.Printf("version:\t%s\nbuild time:\t%s\n", version, buildTime)
+		os.Exit(0)
+	}
 	cfg := config.MustLoad(*cfgPath)
 	log := logger.SetupLogger(cfg.Debug)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

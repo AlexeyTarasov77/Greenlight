@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"expvar"
-	"fmt"
 	"greenlight/proj/internal/domain/models"
 	"greenlight/proj/internal/services/auth"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
 )
 
@@ -64,11 +63,7 @@ func (app *Application) rateLimiter(next http.Handler) http.Handler {
 	}()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if app.cfg.Limiter.Enabled {
-			ip, _, err := net.SplitHostPort(r.RemoteAddr)
-			if err != nil {
-				app.Http.ServerError(w, r, err, "")
-				return
-			}
+			ip := realip.FromRequest(r)
 			if _, ok := clients[ip]; !ok {
 				newClient := &client{
 					limiter:  rate.NewLimiter(rate.Limit(app.cfg.Limiter.Rps), app.cfg.Limiter.Burst),
@@ -81,7 +76,6 @@ func (app *Application) rateLimiter(next http.Handler) http.Handler {
 			}
 			limiter := clients[ip].limiter
 			log.Debug("rate limiting", "ip", ip, "Available requests", limiter.Tokens())
-			fmt.Println("rate limiting", "ip", ip, "Available requests", limiter.Tokens())
 			if !limiter.Allow() {
 				log.Warn("rate limit exceeded", "ip", ip)
 				app.Http.Response(
